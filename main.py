@@ -4,9 +4,11 @@ import tkinter as tk
 from tkinter import *
 import tkinter.messagebox as messagebox  # 弹窗
 from tkinter import filedialog
+from tkinter import simpledialog
 import openpyxl
 import sqlite3
 import os
+import datetime
 
 
 def check_sql():
@@ -26,6 +28,17 @@ def check_sql():
                PRICE          INT     DEFAULT NULL,
                PRIMARY KEY (`ID`));''')
         conn.commit()
+        c.execute('''CREATE TABLE SALE
+                (DATE             TEXT    NOT NULL,
+                   ID             INT     NOT NULL,
+                   NAME           TEXT    DEFAULT NULL,
+                   AGE            TEXT    DEFAULT NULL,
+                   UNIT           TEXT    DEFAULT NULL,
+                   PRICE          INT     DEFAULT NULL,
+                   NUM            INT     DEFAULT NULL,
+                   SUM            INT     DEFAULT NULL,
+                   PRIMARY KEY (`DATE`));''')
+        conn.commit()
         conn.close()
 
 
@@ -37,6 +50,7 @@ def open_window():
 
 class AdminPage:
     def __init__(self, parent_window):
+        self.result = None
         self.row_info = None
         self.row = None
         parent_window.update()
@@ -44,17 +58,20 @@ class AdminPage:
         check_sql()
         self.window = Tk()  # 初始框的声明
         self.window.title('管理面板')
-        self.window.geometry("700x630+300+0")  # 初始窗口在屏幕中的位置
+        self.window.geometry("700x550+300+30")  # 初始窗口在屏幕中的位置
         self.frame_left_top = tk.Frame(width=300, height=200)  # 指定框架，在窗口上可以显示，这里指定四个框架
-        self.frame_right_top = tk.Frame(width=300, height=280)
+        self.frame_right_top = tk.Frame(width=300, height=200)
         self.frame_center = tk.Frame(width=750, height=200)
         self.frame_bottom = tk.Frame(width=800, height=50)
 
         menubar = Menu(self.window, tearoff=0)
         menu1 = Menu(self.window, tearoff=0)
         menu1.add_command(label='从Excel文件导入', command=self.read_excel, font=('Verdana', 15))
-        menubar.add_cascade(label="文件", menu=menu1)
+        menubar.add_cascade(label="菜单", menu=menu1)
         menu1.add_command(label='导出到Excel', command=self.save_excel, font=('Verdana', 15))
+        menu1.add_command(label='导出销售记录到Excel', command=self.save_sellout_excel, font=('Verdana', 15))
+        menu1.add_command(label='选择一个月导出销售记录到Excel', command=self.save_sellout_excel_by_time, font=('Verdana', 15))
+
         self.window['menu'] = menubar
 
         # 定义下方中心列表区域
@@ -79,6 +96,10 @@ class AdminPage:
         self.tree.grid(row=0, column=0, sticky=NSEW)
         self.vbar.grid(row=0, column=1, sticky=NS)
 
+        self.date = []
+        self.num = []
+        self.sum = []
+
         # 定义几个数组，为中间的那个大表格做一些准备
 
         self.id = []
@@ -101,7 +122,6 @@ class AdminPage:
             self.price.append(row[5])
         conn.close()
 
-        print("test***********************")
         for i in range(min(len(self.id), len(self.name), len(self.gender), len(self.age),
                            len(self.unit), len(self.price))):  # 写入数据
             self.tree.insert('', i, values=(self.id[i], self.name[i], self.gender[i], self.age[i],
@@ -159,9 +179,6 @@ class AdminPage:
         self.right_top_button3 = ttk.Button(self.frame_right_top, text='删除选中商品信息',
                                             width=20, command=self.del_row, padding=5)
         self.right_top_button3.bind_all('<Delete>', self.eventhandler)
-        self.edit = StringVar()
-        self.right_title = Label(self.frame_right_top, text="售出数量：", font=('Verdana', 15))
-        self.right_entry = Entry(self.frame_right_top, textvariable=self.edit, font=('Verdana', 10))
         self.right_top_button4 = ttk.Button(self.frame_right_top, text='修改商品库存',
                                             width=20, command=self.edit_num, padding=5)
 
@@ -180,9 +197,7 @@ class AdminPage:
         self.right_top_button2.grid(row=3, column=0, padx=5, pady=5)
         self.right_top_button3.grid(row=4, column=0, padx=5, pady=5)
         self.right_top_button3.bind_all('Delete', self.del_row)
-        self.right_title.grid(row=5, column=0, pady=5)
-        self.right_entry.grid(row=6, column=0, padx=5, pady=5)
-        self.right_top_button4.grid(row=7, column=0, padx=5, pady=5)
+        self.right_top_button4.grid(row=5, column=0, padx=5, pady=5)
 
         # 整体区域定位，利用了Frame和grid进行布局
         self.frame_left_top.grid(row=0, column=0, padx=2, pady=5)
@@ -231,7 +246,6 @@ class AdminPage:
             self.unit.append(row[4])
             self.price.append(row[5])
 
-        print("进行数据的插入")
         for i in range(min(len(self.id), len(self.name), len(self.gender),
                            len(self.age), len(self.unit), len(self.price))):  # 写入数据
             self.tree.insert('', i, values=(self.id[i], self.name[i], self.gender[i],
@@ -253,7 +267,6 @@ class AdminPage:
             return
         self.row = self.tree.identify_row(event.y)  # 行
         self.row_info = self.tree.item(self.row, "values")
-        print(self.row_info)
         self.var_id.set(self.row_info[0])
         self.id1 = self.var_id.get()
         self.var_name.set(self.row_info[1])
@@ -381,58 +394,70 @@ class AdminPage:
         self.var_unit.set('')
         self.var_price.set('')
 
-    def clean_input(self):
-        self.edit.set('')
+    def sellout(self):
+        i = datetime.datetime.now()
+        date1 = "%s/%s/%s %s:%s:%s" % (i.year, i.month, i.day, i.hour, i.minute, i.second)
+        uuu = int(self.row_info[5])
+        price = uuu * self.result
+        conn = sqlite3.connect(os.path.expanduser("~/sql/list.db"))
+        c = conn.cursor()
+        sql = "INSERT INTO SALE (DATE,ID,NAME,AGE,UNIT,PRICE,NUM,SUM) \
+                                   VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')" % \
+              (date1, self.row_info[0], self.row_info[1],
+               self.row_info[3], self.row_info[4], self.row_info[5], self.result, price)
+        try:
+            c.execute(sql)  # 执行sql语句
+            conn.commit()  # 提交到数据库执行
+        except (sqlite3.IntegrityError, sqlite3.ProgrammingError, sqlite3.OperationalError):
+            conn.rollback()
+            conn.close()
+            messagebox.showinfo('警告！', '数据库写入操作失败！')
+        conn.close()
 
     def edit_num(self):
         try:
             self.row_info = self.tree.item(self.row, "values")
-        except AttributeError:
+        except TclError:
             messagebox.showinfo('警告！', '请选择要修改的项目')
             return FALSE
+        td = threading.Thread(target=open_window)
+        td.Daemon = True
+        td.start()
+        self.result = tk.simpledialog.askinteger(title=' ', prompt='售出数量：')
+        if not self.result:
+            return
         self.id1 = self.var_id.get()
-        d = self.edit.get()
+        d = self.result
         m = self.row_info[2]
-        try:
-            d1 = int(d)
-        except ValueError:
-            messagebox.showinfo('警告！', '请输入纯数字')
-            self.clean_input()
-            return FALSE
         m1 = int(m)
-        print(type(d1))
-        if d1 <= 0:
+        if d <= 0:
             messagebox.showinfo('警告！', '请输入大于0的数')
-            self.clean_input()
             return FALSE
-        k = m1 - d1
+        k = m1 - d
         if k >= 0:
-            res = messagebox.askyesnocancel('警告！', '是否更新余货量？')
-            if res:
-                # 打开数据库连接
-                conn = sqlite3.connect(os.path.expanduser("~/sql/list.db"))
-                c = conn.cursor()
-                sql = "UPDATE COMPANY set GENDER = '%s' where ID='%s'" % \
-                      (k, self.id1)
-                try:
-                    sqlerror = "0"
-                    c.execute(sql)
-                    conn.commit()
-                except (sqlite3.ProgrammingError, sqlite3.OperationalError):
-                    sqlerror = "1"
-                    conn.rollback()
-                    messagebox.showinfo('警告！', '更新失败，数据库写入操作失败！')
+            # 打开数据库连接
+            conn = sqlite3.connect(os.path.expanduser("~/sql/list.db"))
+            c = conn.cursor()
+            sql = "UPDATE COMPANY set GENDER = '%s' where ID='%s'" % \
+                  (k, self.id1)
+            try:
+                c.execute(sql)
+                conn.commit()
+            except (sqlite3.ProgrammingError, sqlite3.OperationalError):
+                conn.rollback()
                 conn.close()
-                if sqlerror == "0":
-                    self.tree.item(self.tree.selection()[0], values=(
-                        self.var_id.get(), self.var_name.get(), k,
-                        self.var_age.get(), self.var_unit.get(), self.var_price.get()))
-                    k1 = str(k)
-                    self.var_gender.set(k1)
-                    messagebox.showinfo('提示！', '更新成功！')
+                messagebox.showinfo('警告！', '更新失败，数据库写入操作失败！')
+            else:
+                conn.close()
+                self.tree.item(self.tree.selection()[0], values=(
+                    self.var_id.get(), self.var_name.get(), k,
+                    self.var_age.get(), self.var_unit.get(), self.var_price.get()))
+                k1 = str(k)
+                self.var_gender.set(k1)
+                self.sellout()
+                messagebox.showinfo('提示！', '更新成功！')
         else:
             messagebox.showinfo('警告！', '更新失败，余货量不能为负数！')
-        self.clean_input()
 
     def read_excel(self):
         # 打开文件
@@ -474,14 +499,13 @@ class AdminPage:
                                             filetypes=(("Excel files", "*.xlsx"),))
         if not path:
             return
-        str1 = path.split(sep=".", maxsplit=-1)
+        str1 = path.split(sep=".xlsx", maxsplit=1)
         wb = openpyxl.Workbook()
         ws = wb.active
         ws.title = "Sheet 1"
         conn = sqlite3.connect(os.path.expanduser("~/sql/list.db"))
         c = conn.cursor()
         cursor = c.execute("SELECT *  from COMPANY")
-        cursor.execute("SELECT * FROM COMPANY WHERE name like '%'")
         results = cursor.fetchall()
         self.id1 = []
         self.name = []
@@ -501,6 +525,113 @@ class AdminPage:
         title = ['商品id', '名称', '余货量', '型号', '单位', '单价']
         ws.append(title)
         for var in [self.id1, self.name, self.gender, self.age, self.unit, self.price]:
+            m = var[:]
+            n = n + 1
+            for i in range(len(m)):
+                ws.cell(i + 2, n).value = m[i]
+        try:
+            wb.save(str1[0] + '.xlsx')
+        except PermissionError:
+            messagebox.showinfo('警告！', '导出失败，请检查文件是否被占用！')
+        else:
+            messagebox.showinfo('提示！', '导出成功！')
+
+    def save_sellout_excel_by_time(self):
+        td = threading.Thread(target=open_window)
+        td.Daemon = True
+        td.start()
+        dd = tk.simpledialog.askstring(title=' ', prompt='输入年月，例如：2022.4')
+        if not dd:
+            return
+        date = dd.split(sep='.', maxsplit=2)
+        if date[0] == '' or date[1] == '':
+            messagebox.showinfo('警告！', '请检查输入年月是否正确！')
+            return
+        d = '%s/%s' % (date[0], date[1])
+        path = filedialog.asksaveasfilename(title=u'保存文件', initialfile=dd + '-销售记录.xlsx',
+                                            filetypes=(("Excel files", "*.xlsx"),))
+        if not path:
+            return
+        str1 = path.split(sep=".xlsx", maxsplit=1)
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Sheet 1"
+        conn = sqlite3.connect(os.path.expanduser("~/sql/list.db"))
+        c = conn.cursor()
+        cursor = c.execute("SELECT * FROM SALE WHERE date like '%" + d + "%'")
+        results = cursor.fetchall()
+        self.date = []
+        self.id1 = []
+        self.name = []
+        self.age = []
+        self.unit = []
+        self.price = []
+        self.num = []
+        self.sum = []
+        # 向表格中插入数据
+        for row in results:
+            self.date.append(row[0])
+            self.id1.append(row[1])
+            self.name.append(row[2])
+            self.age.append(row[3])
+            self.unit.append(row[4])
+            self.price.append(row[5])
+            self.num.append(row[6])
+            self.sum.append(row[7])
+        n = 0
+        title = ['日期', '商品id', '名称', '型号', '单位', '单价', '售出数量', '金额']
+        ws.append(title)
+        for var in [self.date, self.id1, self.name, self.age, self.unit, self.price, self.num, self.sum]:
+            m = var[:]
+            n = n + 1
+            for i in range(len(m)):
+                ws.cell(i + 2, n).value = m[i]
+        try:
+            wb.save(str1[0] + '.xlsx')
+        except PermissionError:
+            messagebox.showinfo('警告！', '导出失败，请检查文件是否被占用！')
+        else:
+            messagebox.showinfo('提示！', '导出成功！')
+
+    def save_sellout_excel(self):
+        # 打开文件
+        td = threading.Thread(target=open_window)
+        td.Daemon = True
+        td.start()
+        path = filedialog.asksaveasfilename(title=u'保存文件', initialfile='销售记录.xlsx',
+                                            filetypes=(("Excel files", "*.xlsx"),))
+        if not path:
+            return
+        str1 = path.split(sep=".", maxsplit=-1)
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Sheet 1"
+        conn = sqlite3.connect(os.path.expanduser("~/sql/list.db"))
+        c = conn.cursor()
+        cursor = c.execute("SELECT *  from SALE")
+        results = cursor.fetchall()
+        self.date = []
+        self.id1 = []
+        self.name = []
+        self.age = []
+        self.unit = []
+        self.price = []
+        self.num = []
+        self.sum = []
+        # 向表格中插入数据
+        for row in results:
+            self.date.append(row[0])
+            self.id1.append(row[1])
+            self.name.append(row[2])
+            self.age.append(row[3])
+            self.unit.append(row[4])
+            self.price.append(row[5])
+            self.num.append(row[6])
+            self.sum.append(row[7])
+        n = 0
+        title = ['日期', '商品id', '名称', '型号', '单位', '单价', '售出数量', '金额']
+        ws.append(title)
+        for var in [self.date, self.id1, self.name, self.age, self.unit, self.price, self.num, self.sum]:
             m = var[:]
             n = n + 1
             for i in range(len(m)):

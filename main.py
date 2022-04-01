@@ -69,8 +69,8 @@ class AdminPage:
         menu1.add_command(label='从Excel文件导入', command=self.read_excel, font=('Verdana', 15))
         menubar.add_cascade(label="菜单", menu=menu1)
         menu1.add_command(label='导出到Excel', command=self.save_excel, font=('Verdana', 15))
-        menu1.add_command(label='导出销售记录到Excel', command=self.save_sellout_excel, font=('Verdana', 15))
-        menu1.add_command(label='选择一个月导出销售记录到Excel', command=self.save_sellout_excel_by_time, font=('Verdana', 15))
+        menu1.add_command(label='导出全部销售记录到Excel', command=self.save_sellout_excel, font=('Verdana', 15))
+        menu1.add_command(label='选择时间导出销售记录到Excel', command=self.save_sellout_excel_by_time, font=('Verdana', 15))
 
         self.window['menu'] = menubar
 
@@ -540,14 +540,23 @@ class AdminPage:
         td = threading.Thread(target=open_window)
         td.Daemon = True
         td.start()
-        dd = tk.simpledialog.askstring(title=' ', prompt='输入年月，例如：2022.4')
+        dd = tk.simpledialog.askstring(title='导出记录时间', prompt='例如：导出某一年：2022   导出某一月：2022.4   导出某一天：2022.4.1')
         if not dd:
             return
-        date = dd.split(sep='.', maxsplit=2)
-        if date[0] == '' or date[1] == '':
-            messagebox.showinfo('警告！', '请检查输入年月是否正确！')
+        date = dd.split(sep='.', maxsplit=3)
+        print(date)
+        if len(date) == 0:
+            messagebox.showinfo('警告！', '请输入导出记录的时间！')
             return
-        d = '%s/%s' % (date[0], date[1])
+        elif len(date) == 1:
+            d = date[0]
+        elif len(date) == 2:
+            d = '%s/%s' % (date[0], date[1])
+        elif len(date) == 3:
+            d = '%s/%s/%s' % (date[0], date[1], date[2])
+        else:
+            messagebox.showinfo('警告！', '请输入正确的时间！')
+            return
         path = filedialog.asksaveasfilename(title=u'保存文件', initialfile=dd + '-销售记录.xlsx',
                                             filetypes=(("Excel files", "*.xlsx"),))
         if not path:

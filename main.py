@@ -23,7 +23,7 @@ def check_sql():
             (ID            INT     NOT NULL,
                NAME           TEXT    DEFAULT NULL,
                REMINDER       INT     DEFAULT NULL,
-               MODEL          EXT    DEFAULT NULL,
+               MODEL          TEXT     DEFAULT NULL,
                UNIT           TEXT    DEFAULT NULL,
                PRICE          INT     DEFAULT NULL,
                PRIMARY KEY (`ID`));''')

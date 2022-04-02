@@ -1,14 +1,14 @@
+import os
+import openpyxl
+import sqlite3
+import datetime
 import threading
 from tkinter import ttk
 import tkinter as tk
 from tkinter import *
-import tkinter.messagebox as messagebox  # 弹窗
+import tkinter.messagebox as messagebox
 from tkinter import filedialog
 from tkinter import simpledialog
-import openpyxl
-import sqlite3
-import os
-import datetime
 
 
 def check_sql():
@@ -22,8 +22,8 @@ def check_sql():
         c.execute('''CREATE TABLE COMPANY
             (ID            INT     NOT NULL,
                NAME           TEXT    DEFAULT NULL,
-               GENDER         INT     DEFAULT NULL,
-               AGE            TEXT    DEFAULT NULL,
+               REMINDER       INT     DEFAULT NULL,
+               MODEL          EXT    DEFAULT NULL,
                UNIT           TEXT    DEFAULT NULL,
                PRICE          INT     DEFAULT NULL,
                PRIMARY KEY (`ID`));''')
@@ -32,7 +32,7 @@ def check_sql():
                 (DATE             TEXT    NOT NULL,
                    ID             INT     NOT NULL,
                    NAME           TEXT    DEFAULT NULL,
-                   AGE            TEXT    DEFAULT NULL,
+                   MODEL          TEXT    DEFAULT NULL,
                    UNIT           TEXT    DEFAULT NULL,
                    PRICE          INT     DEFAULT NULL,
                    NUM            INT     DEFAULT NULL,
@@ -40,6 +40,30 @@ def check_sql():
                    PRIMARY KEY (`DATE`));''')
         conn.commit()
         conn.close()
+
+
+def excel_template():
+    td = threading.Thread(target=open_window)
+    td.Daemon = True
+    td.start()
+    path = filedialog.asksaveasfilename(title=u'保存文件', initialfile='模板文件.xlsx',
+                                        filetypes=(("Excel files", "*.xlsx"),))
+    if not path:
+        return
+    str1 = path.split(sep=".", maxsplit=-1)
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Sheet 1"
+    title = ['商品id', '名称', '余货量', '型号', '单位', '单价']
+    ws.append(title)
+    ws.cell(2, 1).value = 1
+    ws.cell(3, 1).value = 2
+    try:
+        wb.save(str1[0] + '.xlsx')
+    except PermissionError:
+        messagebox.showinfo('警告！', '导出失败，请检查文件是否被占用！')
+    else:
+        messagebox.showinfo('提示！', '导出成功！')
 
 
 # 商品信息操作界面
@@ -64,14 +88,15 @@ class AdminPage:
         self.frame_center = tk.Frame(width=750, height=200)
         self.frame_bottom = tk.Frame(width=800, height=50)
 
+        # 菜单栏
         menubar = Menu(self.window, tearoff=0)
         menu1 = Menu(self.window, tearoff=0)
-        menu1.add_command(label='从Excel文件导入', command=self.read_excel, font=('Verdana', 15))
+        menu1.add_command(label='从Excel文件导入', command=self.read_excel, font=('微软雅黑', 15))
         menubar.add_cascade(label="菜单", menu=menu1)
-        menu1.add_command(label='导出到Excel', command=self.save_excel, font=('Verdana', 15))
-        menu1.add_command(label='导出全部销售记录到Excel', command=self.save_sellout_excel, font=('Verdana', 15))
-        menu1.add_command(label='选择时间导出销售记录到Excel', command=self.save_sellout_excel_by_time, font=('Verdana', 15))
-
+        menu1.add_command(label='导出表单到Excel', command=self.save_excel, font=('微软雅黑', 15))
+        menu1.add_command(label='导出全部销售记录到Excel', command=self.save_sellout_excel, font=('微软雅黑', 15))
+        menu1.add_command(label='选择时间导出销售记录到Excel', command=self.save_sellout_excel_by_time, font=('微软雅黑', 15))
+        menu1.add_command(label='生成导入模板', command=excel_template, font=('微软雅黑', 15))
         self.window['menu'] = menubar
 
         # 定义下方中心列表区域
@@ -104,8 +129,8 @@ class AdminPage:
 
         self.id = []
         self.name = []
-        self.gender = []
-        self.age = []
+        self.reminder = []
+        self.model = []
         self.unit = []
         self.price = []
         # 打开数据库连接
@@ -116,61 +141,63 @@ class AdminPage:
         for row in results:
             self.id.append(row[0])
             self.name.append(row[1])
-            self.gender.append(row[2])
-            self.age.append(row[3])
+            self.reminder.append(row[2])
+            self.model.append(row[3])
             self.unit.append(row[4])
             self.price.append(row[5])
         conn.close()
 
-        for i in range(min(len(self.id), len(self.name), len(self.gender), len(self.age),
-                           len(self.unit), len(self.price))):  # 写入数据
-            self.tree.insert('', i, values=(self.id[i], self.name[i], self.gender[i], self.age[i],
+        # 写入数据
+        for i in range(min(len(self.id), len(self.name), len(self.reminder), len(self.model),
+                           len(self.unit), len(self.price))):
+            self.tree.insert('', i, values=(self.id[i], self.name[i], self.reminder[i], self.model[i],
                                             self.unit[i], self.price[i]))
 
-        for col in self.columns:  # 绑定函数，使表头可排序(这里的command=lambda _col=col还不是太懂)
+        # 绑定函数，使表头可排序
+        for col in self.columns:
             self.tree.heading(col, text=col, command=lambda _col=col: self.tree_sort_column(self.tree, _col, False))
 
         # 定义左上方区域
         self.left_top_frame = tk.Frame(self.frame_left_top)
         self.var_id = StringVar()  # 声明学号
         self.var_name = StringVar()  # 声明姓名
-        self.var_gender = StringVar()  # 声明性别
-        self.var_age = StringVar()  # 声明年龄
+        self.var_reminder = StringVar()  # 声明性别
+        self.var_model = StringVar()  # 声明年龄
         self.var_unit = StringVar()  # 声明性别
         self.var_price = StringVar()  # 声明年龄
         # 商品id
-        self.right_top_id_label = Label(self.frame_left_top, text="商品id： ", font=('Verdana', 15))
-        self.right_top_id_entry = Entry(self.frame_left_top, textvariable=self.var_id, font=('Verdana', 15))
+        self.right_top_id_label = Label(self.frame_left_top, text="商品id： ", font=('微软雅黑', 15))
+        self.right_top_id_entry = Entry(self.frame_left_top, textvariable=self.var_id, font=('微软雅黑', 15))
         self.right_top_id_label.grid(row=1, column=0)
         self.right_top_id_entry.grid(row=1, column=1)
         # 商品名称
-        self.right_top_name_label = Label(self.frame_left_top, text="名称：", font=('Verdana', 15))
-        self.right_top_name_entry = Entry(self.frame_left_top, textvariable=self.var_name, font=('Verdana', 15))
+        self.right_top_name_label = Label(self.frame_left_top, text="名称：", font=('微软雅黑', 15))
+        self.right_top_name_entry = Entry(self.frame_left_top, textvariable=self.var_name, font=('微软雅黑', 15))
         self.right_top_name_label.grid(row=2, column=0)  # 位置设置
         self.right_top_name_entry.grid(row=2, column=1)
-        # 商品价格
-        self.right_top_gender_label = Label(self.frame_left_top, text="余货量：", font=('Verdana', 15))
-        self.right_top_gender_entry = Entry(self.frame_left_top, textvariable=self.var_gender, font=('Verdana', 15))
-        self.right_top_gender_label.grid(row=3, column=0)  # 位置设置
-        self.right_top_gender_entry.grid(row=3, column=1)
-        # 销售数量
-        self.right_top_gender_label = Label(self.frame_left_top, text="型号：", font=('Verdana', 15))
-        self.right_top_gender_entry = Entry(self.frame_left_top, textvariable=self.var_age, font=('Verdana', 15))
-        self.right_top_gender_label.grid(row=4, column=0)  # 位置设置
-        self.right_top_gender_entry.grid(row=4, column=1)
+        # 余货量
+        self.right_top_remainder_label = Label(self.frame_left_top, text="余货量：", font=('微软雅黑', 15))
+        self.right_top_remainder_entry = Entry(self.frame_left_top, textvariable=self.var_reminder, font=('微软雅黑', 15))
+        self.right_top_remainder_label.grid(row=3, column=0)  # 位置设置
+        self.right_top_remainder_entry.grid(row=3, column=1)
+        # 型号
+        self.right_top_model_label = Label(self.frame_left_top, text="型号：", font=('微软雅黑', 15))
+        self.right_top_model_entry = Entry(self.frame_left_top, textvariable=self.var_model, font=('微软雅黑', 15))
+        self.right_top_model_label.grid(row=4, column=0)  # 位置设置
+        self.right_top_model_entry.grid(row=4, column=1)
 
-        self.right_top_gender_label = Label(self.frame_left_top, text="单位：", font=('Verdana', 15))
-        self.right_top_gender_entry = Entry(self.frame_left_top, textvariable=self.var_unit, font=('Verdana', 15))
-        self.right_top_gender_label.grid(row=5, column=0)  # 位置设置
-        self.right_top_gender_entry.grid(row=5, column=1)
+        self.right_top_unit_label = Label(self.frame_left_top, text="单位：", font=('微软雅黑', 15))
+        self.right_top_unit_entry = Entry(self.frame_left_top, textvariable=self.var_unit, font=('微软雅黑', 15))
+        self.right_top_unit_label.grid(row=5, column=0)  # 位置设置
+        self.right_top_unit_entry.grid(row=5, column=1)
 
-        self.right_top_gender_label = Label(self.frame_left_top, text="单价：", font=('Verdana', 15))
-        self.right_top_gender_entry = Entry(self.frame_left_top, textvariable=self.var_price, font=('Verdana', 15))
-        self.right_top_gender_label.grid(row=6, column=0)  # 位置设置
-        self.right_top_gender_entry.grid(row=6, column=1)
+        self.right_top_price_label = Label(self.frame_left_top, text="单价：", font=('微软雅黑', 15))
+        self.right_top_price_entry = Entry(self.frame_left_top, textvariable=self.var_price, font=('微软雅黑', 15))
+        self.right_top_price_label.grid(row=6, column=0)  # 位置设置
+        self.right_top_price_entry.grid(row=6, column=1)
 
         # 定义右上方区域
-        # self.right_top_title = Label(self.frame_right_top, text="操作：", font=('Verdana', 15))
+        # self.right_top_title = Label(self.frame_right_top, text="操作：", font=('微软雅黑', 15))
         self.tree.bind('<Button-1>', self.click)  # 左键获取位置(tree.bind可以绑定一系列的事件，可以搜索ttk相关参数查看)
         self.right_top_button1 = ttk.Button(self.frame_right_top, text='新建商品信息',
                                             width=20, command=self.new_row, padding=5)
@@ -184,10 +211,10 @@ class AdminPage:
 
         # 定义下方区域，查询功能块
         self.search = StringVar()
-        self.right_bottom_gender_entry = Entry(self.frame_bottom, textvariable=self.search, font=('Verdana', 15))
+        self.right_bottom_search_entry = Entry(self.frame_bottom, textvariable=self.search, font=('微软雅黑', 15))
         self.right_bottom_button = ttk.Button(self.frame_bottom, text='商品名称查询', width=20, command=self.put_data)
         self.right_bottom_button.grid(row=0, column=1, padx=20, pady=20)  # 位置设置
-        self.right_bottom_gender_entry.grid(row=0, column=0, padx=20, pady=20)
+        self.right_bottom_search_entry.grid(row=0, column=0, padx=20, pady=20)
 
         self.right_bottom_button1 = ttk.Button(self.frame_bottom, text='清除查询结果', width=20, command=self.clean_search)
         self.right_bottom_button1.grid(row=0, column=2, padx=20, pady=20)
@@ -233,23 +260,23 @@ class AdminPage:
         results = e.fetchall()
         self.id = []
         self.name = []
-        self.gender = []
-        self.age = []
+        self.reminder = []
+        self.model = []
         self.unit = []
         self.price = []
         # 向表格中插入数据
         for row in results:
             self.id.append(row[0])
             self.name.append(row[1])
-            self.gender.append(row[2])
-            self.age.append(row[3])
+            self.reminder.append(row[2])
+            self.model.append(row[3])
             self.unit.append(row[4])
             self.price.append(row[5])
 
-        for i in range(min(len(self.id), len(self.name), len(self.gender),
-                           len(self.age), len(self.unit), len(self.price))):  # 写入数据
-            self.tree.insert('', i, values=(self.id[i], self.name[i], self.gender[i],
-                                            self.age[i], self.unit[i], self.price[i]))
+        for i in range(min(len(self.id), len(self.name), len(self.reminder),
+                           len(self.model), len(self.unit), len(self.price))):  # 写入数据
+            self.tree.insert('', i, values=(self.id[i], self.name[i], self.reminder[i],
+                                            self.model[i], self.unit[i], self.price[i]))
 
         for col in self.columns:  # 绑定函数，使表头可排序
             self.tree.heading(col, text=col,
@@ -270,12 +297,12 @@ class AdminPage:
         self.var_id.set(self.row_info[0])
         self.id1 = self.var_id.get()
         self.var_name.set(self.row_info[1])
-        self.var_gender.set(self.row_info[2])
-        self.var_age.set(self.row_info[3])
+        self.var_reminder.set(self.row_info[2])
+        self.var_model.set(self.row_info[3])
         self.var_unit.set(self.row_info[4])
         self.var_price.set(self.row_info[5])
         self.right_top_id_entry = Entry(self.frame_left_top, state='disabled', textvariable=self.var_id,
-                                        font=('Verdana', 15))
+                                        font=('微软雅黑', 15))
 
     # 点击中间的表格的表头，可以将那一列进行排序
     def tree_sort_column(self, tv, col, reverse):  # Treeview、列名、排列方式
@@ -286,8 +313,8 @@ class AdminPage:
         tv.heading(col, text=col, command=lambda _col=col: self.tree_sort_column(tv, _col, not reverse))
 
     def new_row(self):
-        if self.var_id.get() == '' or self.var_name.get() == '' or self.var_gender.get() == '' \
-                or self.var_age.get() == '' or self.var_name.get() == '' or self.var_gender.get() == '':
+        if self.var_id.get() == '' or self.var_name.get() == '' or self.var_reminder.get() == '' \
+                or self.var_model.get() == '' or self.var_name.get() == '' or self.var_reminder.get() == '':
             messagebox.showinfo('警告！', '请填写商品信息')
         else:
             if str(self.var_id.get()) in self.id:
@@ -296,10 +323,10 @@ class AdminPage:
                 # 打开数据库连接
                 conn = sqlite3.connect(os.path.expanduser("~/sql/list.db"))
                 c = conn.cursor()
-                sql = "INSERT INTO COMPANY (ID,NAME,GENDER,AGE,UNIT,PRICE) \
+                sql = "INSERT INTO COMPANY (ID,NAME,REMINDER,MODEL,UNIT,PRICE) \
                            VALUES ('%s', '%s', '%s', '%s', '%s', '%s')" % \
-                      (self.var_id.get(), self.var_name.get(), self.var_gender.get(),
-                       self.var_age.get(), self.var_unit.get(), self.var_price.get())
+                      (self.var_id.get(), self.var_name.get(), self.var_reminder.get(),
+                       self.var_model.get(), self.var_unit.get(), self.var_price.get())
                 try:
                     sqlerror = "0"
                     c.execute(sql)  # 执行sql语句
@@ -315,13 +342,13 @@ class AdminPage:
                 if sqlerror == "0":
                     self.id.append(self.var_id.get())
                     self.name.append(self.var_name.get())
-                    self.gender.append(self.var_gender.get())
-                    self.age.append(self.var_age.get())
+                    self.reminder.append(self.var_reminder.get())
+                    self.model.append(self.var_model.get())
                     self.unit.append(self.var_unit.get())
                     self.price.append(self.var_price.get())
                     self.tree.insert('', len(self.id) - 1, values=(
-                        self.id[len(self.id) - 1], self.name[len(self.id) - 1], self.gender[len(self.id) - 1],
-                        self.age[len(self.id) - 1], self.unit[len(self.id) - 1], self.price[len(self.id) - 1]))
+                        self.id[len(self.id) - 1], self.name[len(self.id) - 1], self.reminder[len(self.id) - 1],
+                        self.model[len(self.id) - 1], self.unit[len(self.id) - 1], self.price[len(self.id) - 1]))
                     self.tree.update()
                     messagebox.showinfo('提示！', '插入成功！')
 
@@ -329,8 +356,8 @@ class AdminPage:
         if self.var_id.get() == '':
             messagebox.showinfo('警告！', '请点击要更新的项目！')
         else:
-            if self.var_id.get() == '' or self.var_name.get() == '' or self.var_gender.get() == '' \
-                    or self.var_age.get() == '' or self.var_name.get() == '' or self.var_gender.get() == '':
+            if self.var_id.get() == '' or self.var_name.get() == '' or self.var_reminder.get() == '' \
+                    or self.var_model.get() == '' or self.var_name.get() == '' or self.var_reminder.get() == '':
                 messagebox.showinfo('警告！', '请填写商品信息')
             else:
                 res = messagebox.askyesnocancel('警告！', '是否更新所填数据？')
@@ -338,10 +365,10 @@ class AdminPage:
                     # 打开数据库连接
                     conn = sqlite3.connect(os.path.expanduser("~/sql/list.db"))
                     c = conn.cursor()
-                    sql = "UPDATE COMPANY set ID = '%s', NAME = '%s', GENDER = '%s', AGE='%s' ," \
+                    sql = "UPDATE COMPANY set ID = '%s', NAME = '%s', REMINDER = '%s', MODEL='%s' ," \
                           " UNIT = '%s', PRICE='%s' where ID='%s'" % \
-                          (self.var_id.get(), self.var_name.get(), self.var_gender.get(),
-                           self.var_age.get(), self.var_unit.get(), self.var_price.get(), self.id1)
+                          (self.var_id.get(), self.var_name.get(), self.var_reminder.get(),
+                           self.var_model.get(), self.var_unit.get(), self.var_price.get(), self.id1)
                     try:
                         sqlerror = "0"
                         c.execute(sql)
@@ -356,8 +383,9 @@ class AdminPage:
                     conn.close()
                     if sqlerror == "0":
                         self.tree.item(self.tree.selection()[0], values=(
-                            self.var_id.get(), self.var_name.get(), self.var_gender.get(),
-                            self.var_age.get(), self.var_unit.get(), self.var_price.get()))
+                            self.var_id.get(), self.var_name.get(), self.var_reminder.get(),
+                            self.var_model.get(), self.var_unit.get(), self.var_price.get()))
+                    messagebox.showinfo('提示！', '更新成功！')
 
     def eventhandler(self, event):
         if event.keysym == 'Delete':
@@ -389,8 +417,8 @@ class AdminPage:
     def clean_info(self):
         self.var_id.set('')
         self.var_name.set('')
-        self.var_gender.set('')
-        self.var_age.set('')
+        self.var_reminder.set('')
+        self.var_model.set('')
         self.var_unit.set('')
         self.var_price.set('')
 
@@ -401,7 +429,7 @@ class AdminPage:
         price = uuu * self.result
         conn = sqlite3.connect(os.path.expanduser("~/sql/list.db"))
         c = conn.cursor()
-        sql = "INSERT INTO SALE (DATE,ID,NAME,AGE,UNIT,PRICE,NUM,SUM) \
+        sql = "INSERT INTO SALE (DATE,ID,NAME,MODEL,UNIT,PRICE,NUM,SUM) \
                                    VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')" % \
               (date1, self.row_info[0], self.row_info[1],
                self.row_info[3], self.row_info[4], self.row_info[5], self.result, price)
@@ -438,7 +466,7 @@ class AdminPage:
             # 打开数据库连接
             conn = sqlite3.connect(os.path.expanduser("~/sql/list.db"))
             c = conn.cursor()
-            sql = "UPDATE COMPANY set GENDER = '%s' where ID='%s'" % \
+            sql = "UPDATE COMPANY set REMINDER = '%s' where ID='%s'" % \
                   (k, self.id1)
             try:
                 c.execute(sql)
@@ -451,9 +479,9 @@ class AdminPage:
                 conn.close()
                 self.tree.item(self.tree.selection()[0], values=(
                     self.var_id.get(), self.var_name.get(), k,
-                    self.var_age.get(), self.var_unit.get(), self.var_price.get()))
+                    self.var_model.get(), self.var_unit.get(), self.var_price.get()))
                 k1 = str(k)
-                self.var_gender.set(k1)
+                self.var_reminder.set(k1)
                 self.sellout()
                 messagebox.showinfo('提示！', '更新成功！')
         else:
@@ -478,7 +506,7 @@ class AdminPage:
             for i in range(2, (row + 1)):
                 for j in range(1, (column + 1)):
                     values.append(m.cell(row=i, column=j).value)
-                sql = "INSERT INTO COMPANY (ID,NAME,GENDER,AGE,UNIT,PRICE) \
+                sql = "INSERT INTO COMPANY (ID,NAME,REMINDER,MODEL,UNIT,PRICE) \
                                         VALUES ('%s', '%s', '%s', '%s', '%s', '%s')" % \
                       (values[0], values[1], values[2], values[3], values[4], values[5])
                 c.execute(sql)  # 执行sql语句
@@ -487,8 +515,8 @@ class AdminPage:
             messagebox.showinfo('警告！', '导入失败，请检查商品id是否重复！')
         else:
             conn.commit()
-            messagebox.showinfo('提示！', '导入成功！')
             self.clean_search()
+            messagebox.showinfo('提示！', '导入成功！')
 
     def save_excel(self):
         # 打开文件
@@ -509,22 +537,22 @@ class AdminPage:
         results = cursor.fetchall()
         self.id1 = []
         self.name = []
-        self.gender = []
-        self.age = []
+        self.reminder = []
+        self.model = []
         self.unit = []
         self.price = []
         # 向表格中插入数据
         for row in results:
             self.id1.append(row[0])
             self.name.append(row[1])
-            self.gender.append(row[2])
-            self.age.append(row[3])
+            self.reminder.append(row[2])
+            self.model.append(row[3])
             self.unit.append(row[4])
             self.price.append(row[5])
         n = 0
         title = ['商品id', '名称', '余货量', '型号', '单位', '单价']
         ws.append(title)
-        for var in [self.id1, self.name, self.gender, self.age, self.unit, self.price]:
+        for var in [self.id1, self.name, self.reminder, self.model, self.unit, self.price]:
             m = var[:]
             n = n + 1
             for i in range(len(m)):
@@ -572,7 +600,7 @@ class AdminPage:
         self.date = []
         self.id1 = []
         self.name = []
-        self.age = []
+        self.model = []
         self.unit = []
         self.price = []
         self.num = []
@@ -582,7 +610,7 @@ class AdminPage:
             self.date.append(row[0])
             self.id1.append(row[1])
             self.name.append(row[2])
-            self.age.append(row[3])
+            self.model.append(row[3])
             self.unit.append(row[4])
             self.price.append(row[5])
             self.num.append(row[6])
@@ -590,7 +618,7 @@ class AdminPage:
         n = 0
         title = ['日期', '商品id', '名称', '型号', '单位', '单价', '售出数量', '金额']
         ws.append(title)
-        for var in [self.date, self.id1, self.name, self.age, self.unit, self.price, self.num, self.sum]:
+        for var in [self.date, self.id1, self.name, self.model, self.unit, self.price, self.num, self.sum]:
             m = var[:]
             n = n + 1
             for i in range(len(m)):
@@ -622,7 +650,7 @@ class AdminPage:
         self.date = []
         self.id1 = []
         self.name = []
-        self.age = []
+        self.model = []
         self.unit = []
         self.price = []
         self.num = []
@@ -632,7 +660,7 @@ class AdminPage:
             self.date.append(row[0])
             self.id1.append(row[1])
             self.name.append(row[2])
-            self.age.append(row[3])
+            self.model.append(row[3])
             self.unit.append(row[4])
             self.price.append(row[5])
             self.num.append(row[6])
@@ -640,7 +668,7 @@ class AdminPage:
         n = 0
         title = ['日期', '商品id', '名称', '型号', '单位', '单价', '售出数量', '金额']
         ws.append(title)
-        for var in [self.date, self.id1, self.name, self.age, self.unit, self.price, self.num, self.sum]:
+        for var in [self.date, self.id1, self.name, self.model, self.unit, self.price, self.num, self.sum]:
             m = var[:]
             n = n + 1
             for i in range(len(m)):

@@ -1,0 +1,1268 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1400</width>
+    <height>865</height>
+   </rect>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>1400</width>
+    <height>865</height>
+   </size>
+  </property>
+  <property name="windowTitle">
+   <string>商品管理</string>
+  </property>
+  <property name="windowIcon">
+   <iconset>
+    <normaloff>icon.png</normaloff>../pythonProject4/icon.png</iconset>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QVBoxLayout" name="verticalLayout_4">
+    <item>
+     <widget class="QTabWidget" name="tabWidget">
+      <property name="font">
+       <font>
+        <pointsize>12</pointsize>
+       </font>
+      </property>
+      <property name="focusPolicy">
+       <enum>Qt::StrongFocus</enum>
+      </property>
+      <property name="currentIndex">
+       <number>0</number>
+      </property>
+      <widget class="QWidget" name="tab">
+       <attribute name="title">
+        <string>出货</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayout_3">
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_3" stretch="5,1">
+          <item>
+           <widget class="QTableWidget" name="table_sell_out">
+            <property name="font">
+             <font>
+              <pointsize>10</pointsize>
+             </font>
+            </property>
+            <property name="editTriggers">
+             <set>QAbstractItemView::NoEditTriggers</set>
+            </property>
+            <property name="selectionBehavior">
+             <enum>QAbstractItemView::SelectRows</enum>
+            </property>
+            <property name="verticalScrollMode">
+             <enum>QAbstractItemView::ScrollPerPixel</enum>
+            </property>
+            <property name="horizontalScrollMode">
+             <enum>QAbstractItemView::ScrollPerPixel</enum>
+            </property>
+            <column>
+             <property name="text">
+              <string>商品id</string>
+             </property>
+            </column>
+            <column>
+             <property name="text">
+              <string>名称</string>
+             </property>
+            </column>
+            <column>
+             <property name="text">
+              <string>型号</string>
+             </property>
+            </column>
+            <column>
+             <property name="text">
+              <string>单位</string>
+             </property>
+            </column>
+            <column>
+             <property name="text">
+              <string>数量</string>
+             </property>
+            </column>
+            <column>
+             <property name="text">
+              <string>单价</string>
+             </property>
+            </column>
+            <column>
+             <property name="text">
+              <string>总价</string>
+             </property>
+            </column>
+           </widget>
+          </item>
+          <item>
+           <layout class="QVBoxLayout" name="verticalLayout_2">
+            <item>
+             <widget class="QPushButton" name="btn_sell_3">
+              <property name="minimumSize">
+               <size>
+                <width>150</width>
+                <height>75</height>
+               </size>
+              </property>
+              <property name="font">
+               <font>
+                <pointsize>12</pointsize>
+               </font>
+              </property>
+              <property name="text">
+               <string>完成出货</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="btn_sell_2">
+              <property name="minimumSize">
+               <size>
+                <width>150</width>
+                <height>75</height>
+               </size>
+              </property>
+              <property name="font">
+               <font>
+                <pointsize>12</pointsize>
+               </font>
+              </property>
+              <property name="text">
+               <string>删除</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <widget class="Line" name="line_4">
+          <property name="frameShadow">
+           <enum>QFrame::Raised</enum>
+          </property>
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="2,1,1,1">
+          <item>
+           <widget class="QLineEdit" name="text_sell">
+            <property name="minimumSize">
+             <size>
+              <width>0</width>
+              <height>40</height>
+             </size>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="btn_sell_4">
+            <property name="minimumSize">
+             <size>
+              <width>200</width>
+              <height>50</height>
+             </size>
+            </property>
+            <property name="font">
+             <font>
+              <pointsize>12</pointsize>
+             </font>
+            </property>
+            <property name="text">
+             <string>名称查询</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="btn_sell_5">
+            <property name="minimumSize">
+             <size>
+              <width>200</width>
+              <height>50</height>
+             </size>
+            </property>
+            <property name="font">
+             <font>
+              <pointsize>12</pointsize>
+             </font>
+            </property>
+            <property name="text">
+             <string>id查询</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <spacer name="horizontalSpacer">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeType">
+             <enum>QSizePolicy::Fixed</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>230</width>
+              <height>0</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout" stretch="5,1">
+          <item>
+           <widget class="QTableWidget" name="table_prepare_goods">
+            <property name="font">
+             <font>
+              <pointsize>10</pointsize>
+             </font>
+            </property>
+            <property name="contextMenuPolicy">
+             <enum>Qt::DefaultContextMenu</enum>
+            </property>
+            <property name="autoFillBackground">
+             <bool>false</bool>
+            </property>
+            <property name="editTriggers">
+             <set>QAbstractItemView::NoEditTriggers</set>
+            </property>
+            <property name="selectionBehavior">
+             <enum>QAbstractItemView::SelectRows</enum>
+            </property>
+            <property name="verticalScrollMode">
+             <enum>QAbstractItemView::ScrollPerPixel</enum>
+            </property>
+            <property name="horizontalScrollMode">
+             <enum>QAbstractItemView::ScrollPerPixel</enum>
+            </property>
+            <column>
+             <property name="text">
+              <string>商品id</string>
+             </property>
+            </column>
+            <column>
+             <property name="text">
+              <string>名称</string>
+             </property>
+            </column>
+            <column>
+             <property name="text">
+              <string>余货量</string>
+             </property>
+            </column>
+            <column>
+             <property name="text">
+              <string>型号</string>
+             </property>
+            </column>
+            <column>
+             <property name="text">
+              <string>单位</string>
+             </property>
+            </column>
+            <column>
+             <property name="text">
+              <string>单价</string>
+             </property>
+            </column>
+           </widget>
+          </item>
+          <item>
+           <layout class="QVBoxLayout" name="verticalLayout">
+            <item>
+             <widget class="QPushButton" name="btn_sell_6">
+              <property name="minimumSize">
+               <size>
+                <width>150</width>
+                <height>75</height>
+               </size>
+              </property>
+              <property name="font">
+               <font>
+                <pointsize>12</pointsize>
+               </font>
+              </property>
+              <property name="text">
+               <string>清除查询记录</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="btn_sell_1">
+              <property name="minimumSize">
+               <size>
+                <width>150</width>
+                <height>75</height>
+               </size>
+              </property>
+              <property name="font">
+               <font>
+                <pointsize>12</pointsize>
+               </font>
+              </property>
+              <property name="text">
+               <string>售出选中商品</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+         </layout>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="tab_2">
+       <attribute name="title">
+        <string>商品管理</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayout_12">
+        <item>
+         <layout class="QVBoxLayout" name="verticalLayout_7" stretch="0,0,0,0,0">
+          <item>
+           <layout class="QHBoxLayout" name="horizontalLayout_6" stretch="5,1">
+            <item>
+             <widget class="QTableWidget" name="table_goods">
+              <property name="font">
+               <font>
+                <pointsize>10</pointsize>
+               </font>
+              </property>
+              <property name="editTriggers">
+               <set>QAbstractItemView::NoEditTriggers</set>
+              </property>
+              <property name="selectionBehavior">
+               <enum>QAbstractItemView::SelectRows</enum>
+              </property>
+              <property name="verticalScrollMode">
+               <enum>QAbstractItemView::ScrollPerPixel</enum>
+              </property>
+              <property name="horizontalScrollMode">
+               <enum>QAbstractItemView::ScrollPerPixel</enum>
+              </property>
+              <column>
+               <property name="text">
+                <string>商品id</string>
+               </property>
+              </column>
+              <column>
+               <property name="text">
+                <string>名称</string>
+               </property>
+              </column>
+              <column>
+               <property name="text">
+                <string>余货量</string>
+               </property>
+              </column>
+              <column>
+               <property name="text">
+                <string>型号</string>
+               </property>
+              </column>
+              <column>
+               <property name="text">
+                <string>单位</string>
+               </property>
+              </column>
+              <column>
+               <property name="text">
+                <string>成本价</string>
+               </property>
+              </column>
+              <column>
+               <property name="text">
+                <string>单价</string>
+               </property>
+              </column>
+             </widget>
+            </item>
+            <item>
+             <layout class="QVBoxLayout" name="verticalLayout_6">
+              <item>
+               <widget class="QPushButton" name="btn_goods_5">
+                <property name="minimumSize">
+                 <size>
+                  <width>150</width>
+                  <height>75</height>
+                 </size>
+                </property>
+                <property name="text">
+                 <string>更新库存</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="btn_goods_4">
+                <property name="minimumSize">
+                 <size>
+                  <width>150</width>
+                  <height>75</height>
+                 </size>
+                </property>
+                <property name="text">
+                 <string>删除商品信息</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <layout class="QHBoxLayout" name="horizontalLayout_4" stretch="2,1,1,1,1">
+            <item>
+             <widget class="QLineEdit" name="text_1">
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>40</height>
+               </size>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="btn_goods_1">
+              <property name="minimumSize">
+               <size>
+                <width>200</width>
+                <height>50</height>
+               </size>
+              </property>
+              <property name="text">
+               <string>名称查询</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="btn_goods_2">
+              <property name="minimumSize">
+               <size>
+                <width>200</width>
+                <height>50</height>
+               </size>
+              </property>
+              <property name="text">
+               <string>id查询</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="btn_goods_3">
+              <property name="minimumSize">
+               <size>
+                <width>200</width>
+                <height>50</height>
+               </size>
+              </property>
+              <property name="text">
+               <string>清除查询记录</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <spacer name="horizontalSpacer_2">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeType">
+               <enum>QSizePolicy::Fixed</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>230</width>
+                <height>0</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <widget class="Line" name="line_3">
+            <property name="frameShadow">
+             <enum>QFrame::Raised</enum>
+            </property>
+            <property name="lineWidth">
+             <number>1</number>
+            </property>
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="label">
+            <property name="maximumSize">
+             <size>
+              <width>16777215</width>
+              <height>30</height>
+             </size>
+            </property>
+            <property name="font">
+             <font>
+              <pointsize>12</pointsize>
+              <bold>false</bold>
+             </font>
+            </property>
+            <property name="text">
+             <string>新建商品信息表</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <layout class="QHBoxLayout" name="horizontalLayout_5" stretch="5,1">
+            <item>
+             <widget class="QTableWidget" name="table_new_goods">
+              <property name="font">
+               <font>
+                <pointsize>10</pointsize>
+               </font>
+              </property>
+              <property name="focusPolicy">
+               <enum>Qt::NoFocus</enum>
+              </property>
+              <property name="editTriggers">
+               <set>QAbstractItemView::AllEditTriggers</set>
+              </property>
+              <property name="verticalScrollMode">
+               <enum>QAbstractItemView::ScrollPerPixel</enum>
+              </property>
+              <property name="horizontalScrollMode">
+               <enum>QAbstractItemView::ScrollPerPixel</enum>
+              </property>
+              <column>
+               <property name="text">
+                <string>商品id</string>
+               </property>
+              </column>
+              <column>
+               <property name="text">
+                <string>名称</string>
+               </property>
+              </column>
+              <column>
+               <property name="text">
+                <string>余货量</string>
+               </property>
+              </column>
+              <column>
+               <property name="text">
+                <string>型号</string>
+               </property>
+              </column>
+              <column>
+               <property name="text">
+                <string>单位</string>
+               </property>
+              </column>
+              <column>
+               <property name="text">
+                <string>成本价</string>
+               </property>
+              </column>
+              <column>
+               <property name="text">
+                <string>单价</string>
+               </property>
+              </column>
+             </widget>
+            </item>
+            <item>
+             <layout class="QVBoxLayout" name="verticalLayout_5">
+              <item>
+               <widget class="QPushButton" name="btn_new_goods_1">
+                <property name="minimumSize">
+                 <size>
+                  <width>150</width>
+                  <height>50</height>
+                 </size>
+                </property>
+                <property name="text">
+                 <string>增加一行</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="btn_new_goods_2">
+                <property name="minimumSize">
+                 <size>
+                  <width>150</width>
+                  <height>50</height>
+                 </size>
+                </property>
+                <property name="text">
+                 <string>减小一行</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="btn_new_goods_3">
+                <property name="minimumSize">
+                 <size>
+                  <width>150</width>
+                  <height>50</height>
+                 </size>
+                </property>
+                <property name="text">
+                 <string>合并</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+           </layout>
+          </item>
+         </layout>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="tab_3">
+       <attribute name="title">
+        <string>账单</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayout_9">
+        <item>
+         <widget class="QTableWidget" name="table_sale">
+          <property name="font">
+           <font>
+            <pointsize>10</pointsize>
+           </font>
+          </property>
+          <property name="editTriggers">
+           <set>QAbstractItemView::NoEditTriggers</set>
+          </property>
+          <property name="selectionBehavior">
+           <enum>QAbstractItemView::SelectRows</enum>
+          </property>
+          <property name="verticalScrollMode">
+           <enum>QAbstractItemView::ScrollPerPixel</enum>
+          </property>
+          <property name="horizontalScrollMode">
+           <enum>QAbstractItemView::ScrollPerPixel</enum>
+          </property>
+          <column>
+           <property name="text">
+            <string>时间</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>商品id</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>名称</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>型号</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>单位</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>成本价</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>单价</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>数量</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>总成本价</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>总销售额</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>利润</string>
+           </property>
+          </column>
+         </widget>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_9">
+          <item>
+           <layout class="QVBoxLayout" name="verticalLayout_8">
+            <item>
+             <widget class="QLineEdit" name="text_sale_1">
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>40</height>
+               </size>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <layout class="QHBoxLayout" name="horizontalLayout_8">
+              <item>
+               <widget class="QPushButton" name="btn_sale_1">
+                <property name="minimumSize">
+                 <size>
+                  <width>200</width>
+                  <height>50</height>
+                 </size>
+                </property>
+                <property name="maximumSize">
+                 <size>
+                  <width>200</width>
+                  <height>50</height>
+                 </size>
+                </property>
+                <property name="text">
+                 <string>按名称查询</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="btn_sale_2">
+                <property name="minimumSize">
+                 <size>
+                  <width>200</width>
+                  <height>50</height>
+                 </size>
+                </property>
+                <property name="maximumSize">
+                 <size>
+                  <width>200</width>
+                  <height>50</height>
+                 </size>
+                </property>
+                <property name="toolTip">
+                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;例如：&lt;/p&gt;&lt;p&gt;精确到年：2022&lt;/p&gt;&lt;p&gt;精确到月：2022.4&lt;/p&gt;&lt;p&gt;精确到天：2022.4.3&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                </property>
+                <property name="text">
+                 <string>按时间查询</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="btn_sale_3">
+                <property name="minimumSize">
+                 <size>
+                  <width>200</width>
+                  <height>50</height>
+                 </size>
+                </property>
+                <property name="maximumSize">
+                 <size>
+                  <width>200</width>
+                  <height>50</height>
+                 </size>
+                </property>
+                <property name="text">
+                 <string>清除查询结果</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <layout class="QHBoxLayout" name="horizontalLayout_7">
+            <item>
+             <widget class="Line" name="line">
+              <property name="frameShadow">
+               <enum>QFrame::Raised</enum>
+              </property>
+              <property name="lineWidth">
+               <number>1</number>
+              </property>
+              <property name="midLineWidth">
+               <number>0</number>
+              </property>
+              <property name="orientation">
+               <enum>Qt::Vertical</enum>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="btn_sale_4">
+              <property name="minimumSize">
+               <size>
+                <width>200</width>
+                <height>100</height>
+               </size>
+              </property>
+              <property name="text">
+               <string>选中商品退货</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <spacer name="horizontalSpacer_3">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeType">
+               <enum>QSizePolicy::Fixed</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>200</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+            <item>
+             <widget class="QPushButton" name="btn_sale_5">
+              <property name="minimumSize">
+               <size>
+                <width>250</width>
+                <height>100</height>
+               </size>
+              </property>
+              <property name="text">
+               <string>删除选中销售信息</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+         </layout>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="tab_4">
+       <attribute name="title">
+        <string>进货</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayout_11">
+        <item>
+         <widget class="QTableWidget" name="table_stock">
+          <property name="font">
+           <font>
+            <pointsize>10</pointsize>
+           </font>
+          </property>
+          <property name="editTriggers">
+           <set>QAbstractItemView::NoEditTriggers</set>
+          </property>
+          <property name="selectionBehavior">
+           <enum>QAbstractItemView::SelectRows</enum>
+          </property>
+          <property name="verticalScrollMode">
+           <enum>QAbstractItemView::ScrollPerPixel</enum>
+          </property>
+          <property name="horizontalScrollMode">
+           <enum>QAbstractItemView::ScrollPerPixel</enum>
+          </property>
+          <column>
+           <property name="text">
+            <string>时间</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>商品id</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>名称</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>型号</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>单位</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>单价</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>数量</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>总价</string>
+           </property>
+          </column>
+         </widget>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_11" stretch="2,1,1,1">
+          <item>
+           <layout class="QVBoxLayout" name="verticalLayout_10">
+            <item>
+             <widget class="QLineEdit" name="text_stock_1">
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>40</height>
+               </size>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <layout class="QHBoxLayout" name="horizontalLayout_10">
+              <item>
+               <widget class="QPushButton" name="btn_stock_1">
+                <property name="minimumSize">
+                 <size>
+                  <width>200</width>
+                  <height>50</height>
+                 </size>
+                </property>
+                <property name="maximumSize">
+                 <size>
+                  <width>200</width>
+                  <height>50</height>
+                 </size>
+                </property>
+                <property name="text">
+                 <string>按名称查询</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="btn_stock_2">
+                <property name="minimumSize">
+                 <size>
+                  <width>200</width>
+                  <height>50</height>
+                 </size>
+                </property>
+                <property name="maximumSize">
+                 <size>
+                  <width>200</width>
+                  <height>50</height>
+                 </size>
+                </property>
+                <property name="toolTip">
+                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;例如：&lt;/p&gt;&lt;p&gt;精确到年：2022&lt;/p&gt;&lt;p&gt;精确到月：2022.4&lt;/p&gt;&lt;p&gt;精确到天：2022.4.3&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                </property>
+                <property name="text">
+                 <string>按时间查询</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="btn_stock_3">
+                <property name="minimumSize">
+                 <size>
+                  <width>200</width>
+                  <height>50</height>
+                 </size>
+                </property>
+                <property name="maximumSize">
+                 <size>
+                  <width>200</width>
+                  <height>50</height>
+                 </size>
+                </property>
+                <property name="text">
+                 <string>清除查询结果</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <widget class="Line" name="line_2">
+            <property name="frameShadow">
+             <enum>QFrame::Raised</enum>
+            </property>
+            <property name="orientation">
+             <enum>Qt::Vertical</enum>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <spacer name="horizontalSpacer_4">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeType">
+             <enum>QSizePolicy::Fixed</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>300</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item>
+           <widget class="QPushButton" name="btn_stock_4">
+            <property name="minimumSize">
+             <size>
+              <width>250</width>
+              <height>100</height>
+             </size>
+            </property>
+            <property name="text">
+             <string>删除选中进货信息</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="tab_5">
+       <attribute name="title">
+        <string>设置</string>
+       </attribute>
+       <widget class="QGroupBox" name="groupBox">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>10</y>
+          <width>420</width>
+          <height>280</height>
+         </rect>
+        </property>
+        <property name="title">
+         <string>Excel信息设置</string>
+        </property>
+        <widget class="QPushButton" name="btn_settings_1">
+         <property name="geometry">
+          <rect>
+           <x>240</x>
+           <y>210</y>
+           <width>150</width>
+           <height>41</height>
+          </rect>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>150</width>
+           <height>40</height>
+          </size>
+         </property>
+         <property name="text">
+          <string>保存</string>
+         </property>
+        </widget>
+        <widget class="QWidget" name="layoutWidget">
+         <property name="geometry">
+          <rect>
+           <x>40</x>
+           <y>50</y>
+           <width>301</width>
+           <height>141</height>
+          </rect>
+         </property>
+         <layout class="QGridLayout" name="gridLayout">
+          <item row="0" column="0">
+           <widget class="QLabel" name="label_2">
+            <property name="minimumSize">
+             <size>
+              <width>0</width>
+              <height>30</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>50</width>
+              <height>16777215</height>
+             </size>
+            </property>
+            <property name="text">
+             <string>名称：</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QLineEdit" name="text_settings_1">
+            <property name="minimumSize">
+             <size>
+              <width>0</width>
+              <height>40</height>
+             </size>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QLabel" name="label_3">
+            <property name="minimumSize">
+             <size>
+              <width>0</width>
+              <height>30</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>50</width>
+              <height>16777215</height>
+             </size>
+            </property>
+            <property name="text">
+             <string>地点：</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QLineEdit" name="text_settings_2">
+            <property name="minimumSize">
+             <size>
+              <width>0</width>
+              <height>40</height>
+             </size>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0">
+           <widget class="QLabel" name="label_4">
+            <property name="minimumSize">
+             <size>
+              <width>0</width>
+              <height>30</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>50</width>
+              <height>16777215</height>
+             </size>
+            </property>
+            <property name="text">
+             <string>电话：</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="1">
+           <widget class="QLineEdit" name="text_settings_3">
+            <property name="minimumSize">
+             <size>
+              <width>0</width>
+              <height>40</height>
+             </size>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </widget>
+      </widget>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>1400</width>
+     <height>32</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>12</pointsize>
+    </font>
+   </property>
+   <widget class="QMenu" name="menu">
+    <property name="font">
+     <font>
+      <pointsize>12</pointsize>
+     </font>
+    </property>
+    <property name="title">
+     <string>文件</string>
+    </property>
+    <addaction name="action"/>
+   </widget>
+   <widget class="QMenu" name="menu_2">
+    <property name="font">
+     <font>
+      <pointsize>12</pointsize>
+     </font>
+    </property>
+    <property name="title">
+     <string>导入</string>
+    </property>
+    <addaction name="action_Excel"/>
+   </widget>
+   <widget class="QMenu" name="menu_3">
+    <property name="font">
+     <font>
+      <pointsize>12</pointsize>
+     </font>
+    </property>
+    <property name="title">
+     <string>导出</string>
+    </property>
+    <addaction name="action_Excel_2"/>
+    <addaction name="action_Excel_3"/>
+    <addaction name="action_Excel_4"/>
+   </widget>
+   <addaction name="menu"/>
+   <addaction name="menu_2"/>
+   <addaction name="menu_3"/>
+  </widget>
+  <widget class="QStatusBar" name="statusbar"/>
+  <action name="action_Excel">
+   <property name="text">
+    <string>从Excel文件导入商品信息</string>
+   </property>
+  </action>
+  <action name="action_Excel_2">
+   <property name="text">
+    <string>导出商品信息到Excel</string>
+   </property>
+  </action>
+  <action name="action_Excel_3">
+   <property name="text">
+    <string>选择时间导出销售记录到Excel</string>
+   </property>
+  </action>
+  <action name="action_Excel_4">
+   <property name="text">
+    <string>导出全部销售记录到Excel</string>
+   </property>
+  </action>
+  <action name="action">
+   <property name="text">
+    <string>生成导入模板</string>
+   </property>
+  </action>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

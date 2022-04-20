@@ -532,6 +532,8 @@ class FirstWindow(QMainWindow, Ui_MainWindow):
         conn = sqlite3.connect(sql_file)
         if var == 'date':
             text = self.text_sale_1.text().replace('.', '/')
+            if self.text_sale_1.text().count('.') == 2:
+                text = text + ' '
         else:
             text = self.text_sale_1.text()
         if not text:
@@ -586,6 +588,16 @@ class FirstWindow(QMainWindow, Ui_MainWindow):
             else:
                 conn = sqlite3.connect(sql_file)
                 c = conn.cursor()
+                try:
+                    c.execute(
+                        "SELECT REMINDER from COMPANY  where ID='%s' and NAME='%s' "
+                        "and MODEL='%s' and COST='%s' and PRICE='%s'" %
+                        (self.sale_click(1), self.sale_click(2), self.sale_click(3),
+                         self.sale_click(5), self.sale_click(6))).fetchall()[0]
+                except IndexError:
+                    QMessageBox.warning(self, '提示！', '退货失败，数据库没有相同商品！\n'
+                                                     '注：商品id、商品名称、商品型号、成本价和单价需要同时匹配。')
+                    return
                 e = c.execute(
                     "SELECT * FROM SALE WHERE date = '%s' and id = '%s'" % (
                         self.sale_click(0), self.sale_click(1))).fetchall()
@@ -670,6 +682,8 @@ class FirstWindow(QMainWindow, Ui_MainWindow):
         conn = sqlite3.connect(sql_file)
         if var == 'date':
             text = self.text_stock_1.text().replace('.', '/')
+            if self.text_stock_1.text().count('.') == 2:
+                text = text + ' '
         else:
             text = self.text_stock_1.text()
         if not text:
@@ -738,10 +752,7 @@ class FirstWindow(QMainWindow, Ui_MainWindow):
     def search_prepare_goods_by(self, var):
         self.row1 = None
         conn = sqlite3.connect(sql_file)
-        if var == 'date':
-            text = self.text_sell.text().replace('.', '/')
-        else:
-            text = self.text_sell.text()
+        text = self.text_sell.text()
         if not text:
             self.put_prepare_goods_data()
         else:

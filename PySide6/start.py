@@ -210,18 +210,6 @@ class FirstWindow(QMainWindow, Ui_MainWindow):
         fix_missing()
         self.up = Update()
         self.download_update = DownloadUpdate()
-        self.date = []
-        self.id = []
-        self.name = []
-        self.reminder = []
-        self.model = []
-        self.unit = []
-        self.cost = []
-        self.price = []
-        self.num = []
-        self.cost_sum = []
-        self.sum = []
-        self.get = []
         self.row1 = None
         self.col1 = None
 
@@ -429,13 +417,12 @@ class FirstWindow(QMainWindow, Ui_MainWindow):
         if not self.row1 and self.row1 != 0:
             QMessageBox.warning(self, '警告！', '请点击要更新的项目！')
         else:
-            self.id = self.click(0)
-            self.name = self.click(1)
-            self.reminder = self.click(2)
-            self.model = self.click(3)
-            self.unit = self.click(4)
-            self.cost = self.click(5)
-            self.price = self.click(6)
+            id1 = self.click(0)
+            name = self.click(1)
+            reminder = self.click(2)
+            model = self.click(3)
+            unit = self.click(4)
+            cost = self.click(5)
             ok = bool()
             num, ok = QInputDialog.getInt(self, '输入框', '输入数字', ok)
             if ok is False:
@@ -444,13 +431,13 @@ class FirstWindow(QMainWindow, Ui_MainWindow):
             elif ok is True and num <= 0:
                 QMessageBox.information(self, '提示！', '请输入一个大于 0 的数！')
             else:
-                self.sum = num + int(self.reminder)
-                self.cost_sum = num * int(self.cost)
-                self.num = num
+                after_num = num + int(reminder)
+                cost_sum = num * int(cost)
+                num = num
                 conn = sqlite3.connect(sql_file)
                 c = conn.cursor()
                 sql = "UPDATE COMPANY set REMINDER = '%s' where ID='%s'" % \
-                      (self.sum, self.click(0))
+                      (after_num, self.click(0))
                 try:
                     c.execute(sql)
                     conn.commit()
@@ -458,13 +445,13 @@ class FirstWindow(QMainWindow, Ui_MainWindow):
                     conn.rollback()
                     QMessageBox.warning(self, '警告！', '更新失败，数据库写入操作失败！')
                 else:
-                    self.table_goods.item(int(self.row1), 2).setText(str(self.sum))
+                    self.table_goods.item(int(self.row1), 2).setText(str(after_num))
                 i = datetime.datetime.now()
                 date1 = "%s/%s/%s %s:%s:%s" % (i.year, i.month, i.day, i.hour, i.minute, i.second)
                 sql1 = "INSERT INTO GOODS (DATE,ID,NAME,MODEL,UNIT,COST,NUM,COST_SUM) \
                        VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')" % \
-                       (date1, self.id, self.name, self.model, self.unit,
-                        self.cost, self.num, self.cost_sum)
+                       (date1, id1, name, model, unit,
+                        cost, num, cost_sum)
                 try:
                     c.execute(sql1)
                     conn.commit()
@@ -774,12 +761,12 @@ class FirstWindow(QMainWindow, Ui_MainWindow):
         if not self.row1 and self.row1 != 0:
             QMessageBox.warning(self, '警告！', '请点击要更新的项目！')
         else:
-            self.id = self.prepare_goods_click(0)
-            self.name = self.prepare_goods_click(1)
-            self.reminder = self.prepare_goods_click(2)
-            self.model = self.prepare_goods_click(3)
-            self.unit = self.prepare_goods_click(4)
-            self.price = self.prepare_goods_click(5)
+            id1 = self.prepare_goods_click(0)
+            name = self.prepare_goods_click(1)
+            reminder = self.prepare_goods_click(2)
+            model = self.prepare_goods_click(3)
+            unit = self.prepare_goods_click(4)
+            price = self.prepare_goods_click(5)
             ok = bool()
             num, ok = QInputDialog.getInt(self, '输入框', '输入数字', ok)
             if ok is False:
@@ -788,17 +775,17 @@ class FirstWindow(QMainWindow, Ui_MainWindow):
             elif ok is True and num <= 0:
                 QMessageBox.information(self, '提示！', '请输入一个大于 0 的数！')
             else:
-                after_num = int(self.reminder) - num
+                after_num = int(reminder) - num
                 if after_num <= 0:
                     QMessageBox.information(self, '提示！', '库存不能小于0！')
                     return
-                self.sum = num * int(self.price)
+                get_sum = num * int(price)
                 conn = sqlite3.connect(sql_file)
                 c = conn.cursor()
                 sql1 = "INSERT INTO SELL (ID,NAME,MODEL,UNIT,NUM,PRICE,SUM) \
                                            VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s')" % \
-                       (self.id, self.name, self.model, self.unit,
-                        num, self.price, self.sum)
+                       (id1, name, model, unit,
+                        num, price, get_sum)
                 try:
                     c.execute(sql1)
                     conn.commit()

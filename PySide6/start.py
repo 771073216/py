@@ -4,17 +4,17 @@ import re
 import shutil
 import sqlite3
 
-from win32print import GetDefaultPrinter, EnumPrinters
 from PySide6.QtCore import QThread, Signal
 from PySide6.QtGui import QGuiApplication
 from PySide6.QtWidgets import QMessageBox, QInputDialog, QFileDialog, QMainWindow, QHeaderView, QApplication, QDialog
-from openpyxl.workbook.workbook import Workbook
 from openpyxl.reader.excel import load_workbook
 from openpyxl.styles import Side, Border, colors, Font, Alignment
+from openpyxl.workbook.workbook import Workbook
 from requests.api import get
 from win32com.client import Dispatch
 from win32com.client.gencache import EnsureDispatch
 from win32com.universal import com_error
+from win32print import GetDefaultPrinter, EnumPrinters
 
 from need.dialog import *
 from need.mainwindow import *
@@ -479,184 +479,80 @@ class FirstWindow(QMainWindow, Ui_MainWindow):
 
     def clean_goods_search(self):
         self.text_1.clear()
-        self.search_goods_by('name')
+        self.put_goods_data()
 
     def search_goods_by(self, var):
         self.row1 = None
-        self.id = []
-        self.name = []
-        self.reminder = []
-        self.model = []
-        self.unit = []
-        self.cost = []
-        self.price = []
         conn = sqlite3.connect(sql_file)
-        c = conn.cursor()
-        if var == 'date':
-            d = self.text_1.text().replace('.', '/')
-        else:
-            d = self.text_1.text()
-        if not d:
-            m = self.table_goods.rowCount()
-            for i in range(m):
-                self.table_goods.removeRow(0)
+        text = self.text_1.text()
+        if not text:
             self.put_goods_data()
         else:
-            results = c.execute("SELECT * FROM COMPANY WHERE " + var + " like '%" + d + "%'").fetchall()
-            for row in results:
-                self.id.append(row[0])
-                self.name.append(row[1])
-                self.reminder.append(row[2])
-                self.model.append(row[3])
-                self.unit.append(row[4])
-                self.cost.append(row[5])
-                self.price.append(row[6])
-            rows = min(len(self.id), len(self.name), len(self.reminder), len(self.model), len(self.unit),
-                       len(self.cost),
-                       len(self.price))
-            m = self.table_goods.rowCount()
-            for i in range(m):
-                self.table_goods.removeRow(0)
-            self.table_goods.setRowCount(rows)
-            for i in range(rows):
-                for m in range(7):
-                    value = [self.id[i], self.name[i], self.reminder[i], self.model[i], self.unit[i], self.cost[i],
-                             self.price[i]]
-                    item = QTableWidgetItem()
-                    self.table_goods.setItem(i, m, item)
-                    item_add = self.table_goods.item(i, m)
-                    item_add.setText(str(value[m]))
-                    item_add.setTextAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
+            results = conn.cursor().execute("SELECT * FROM COMPANY WHERE " + var + " like '%" + text + "%'").fetchall()
+            self.write_goods_data(results)
+            conn.close()
 
     def put_goods_data(self):
         conn = sqlite3.connect(sql_file)
         c = conn.cursor()
         cursor = c.execute("select * from COMPANY order by id")
         results = cursor.fetchall()
-        for row in results:
-            self.id.append(row[0])
-            self.name.append(row[1])
-            self.reminder.append(row[2])
-            self.model.append(row[3])
-            self.unit.append(row[4])
-            self.cost.append(row[5])
-            self.price.append(row[6])
+        self.write_goods_data(results)
         conn.close()
-        rows = min(len(self.id), len(self.name), len(self.reminder), len(self.model), len(self.unit), len(self.cost),
-                   len(self.price))
-        self.table_goods.setRowCount(rows)
-        for i in range(rows):
+
+    def write_goods_data(self, results):
+        for i in range(self.table_goods.rowCount()):
+            self.table_goods.removeRow(0)
+        i = 0
+        for row in results:
+            self.table_goods.setRowCount(len(results))
             for m in range(7):
-                value = [self.id[i], self.name[i], self.reminder[i], self.model[i], self.unit[i], self.cost[i],
-                         self.price[i]]
                 item = QTableWidgetItem()
                 self.table_goods.setItem(i, m, item)
                 item_add = self.table_goods.item(i, m)
-                item_add.setText(str(value[m]))
+                item_add.setText(str(row[m]))
                 item_add.setTextAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
+            i = i + 1
+
+    def write_sale_data(self, results):
+        for i in range(self.table_sale.rowCount()):
+            self.table_sale.removeRow(0)
+        i = 0
+        for row in results:
+            self.table_sale.setRowCount(len(results))
+            for m in range(11):
+                item = QTableWidgetItem()
+                self.table_sale.setItem(i, m, item)
+                item_add = self.table_sale.item(i, m)
+                item_add.setText(str(row[m]))
+                item_add.setTextAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
+            i = i + 1
 
     def put_sale_data(self):
-        self.date = []
-        self.id = []
-        self.name = []
-        self.model = []
-        self.unit = []
-        self.cost = []
-        self.price = []
-        self.num = []
-        self.cost_sum = []
-        self.sum = []
-        self.get = []
         conn = sqlite3.connect(sql_file)
         c = conn.cursor()
         cursor = c.execute("SELECT *  from SALE")
         results = cursor.fetchall()
-        for row in results:
-            self.date.append(row[0])
-            self.id.append(row[1])
-            self.name.append(row[2])
-            self.model.append(row[3])
-            self.unit.append(row[4])
-            self.cost.append(row[5])
-            self.price.append(row[6])
-            self.num.append(row[7])
-            self.cost_sum.append(row[8])
-            self.sum.append(row[9])
-            self.get.append(row[10])
+        self.write_sale_data(results)
         conn.close()
-        rows = min(len(self.date), len(self.id), len(self.name), len(self.model),
-                   len(self.unit), len(self.cost), len(self.price), len(self.num), len(self.cost_sum),
-                   len(self.sum), len(self.get))
-        self.table_sale.setRowCount(rows)
-        for i in range(rows):
-            for m in range(11):
-                value = [self.date[i], self.id[i], self.name[i], self.model[i], self.unit[i], self.cost[i],
-                         self.price[i], self.num[i], self.cost_sum[i], self.sum[i], self.get[i]]
-                item = QTableWidgetItem()
-                self.table_sale.setItem(i, m, item)
-                item_add = self.table_sale.item(i, m)
-                item_add.setText(str(value[m]))
-                item_add.setTextAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
 
     def clean_sale_search(self):
         self.text_sale_1.clear()
-        self.search_sale_by('name')
+        self.put_sale_data()
 
     def search_sale_by(self, var):
         self.row1 = None
-        self.date = []
-        self.id = []
-        self.name = []
-        self.model = []
-        self.unit = []
-        self.cost = []
-        self.price = []
-        self.num = []
-        self.cost_sum = []
-        self.sum = []
-        self.get = []
         conn = sqlite3.connect(sql_file)
-        c = conn.cursor()
         if var == 'date':
-            d = self.text_sale_1.text().replace('.', '/')
+            text = self.text_sale_1.text().replace('.', '/')
         else:
-            d = self.text_sale_1.text()
-        if not d:
-            m = self.table_sale.rowCount()
-            for i in range(m):
-                self.table_sale.removeRow(0)
+            text = self.text_sale_1.text()
+        if not text:
             self.put_sale_data()
         else:
-            results = c.execute("SELECT * FROM SALE WHERE " + var + " like '%" + d + "%'").fetchall()
-            for row in results:
-                self.date.append(row[0])
-                self.id.append(row[1])
-                self.name.append(row[2])
-                self.model.append(row[3])
-                self.unit.append(row[4])
-                self.cost.append(row[5])
-                self.price.append(row[6])
-                self.num.append(row[7])
-                self.cost_sum.append(row[8])
-                self.sum.append(row[9])
-                self.get.append(row[10])
-            rows = min(len(self.date), len(self.id), len(self.name), len(self.model),
-                       len(self.unit), len(self.cost), len(self.price), len(self.num), len(self.cost_sum),
-                       len(self.sum), len(self.get))
-            m = self.table_sale.rowCount()
-            for i in range(m):
-                self.table_sale.removeRow(0)
-            self.table_sale.setRowCount(rows)
-            for i in range(rows):
-                for m in range(11):
-                    value = [self.date[i], self.id[i], self.name[i], self.model[i],
-                             self.unit[i], self.cost[i], self.price[i], self.num[i], self.cost_sum[i],
-                             self.sum[i], self.get[i]]
-                    item = QTableWidgetItem()
-                    self.table_sale.setItem(i, m, item)
-                    item_add = self.table_sale.item(i, m)
-                    item_add.setText(str(value[m]))
-                    item_add.setTextAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
+            results = conn.cursor().execute("SELECT * FROM SALE WHERE " + var + " like '%" + text + "%'").fetchall()
+            self.write_sale_data(results)
+            conn.close()
 
     def get_sale_click(self, row, col):
         self.table_sale.item(row, col).text()
@@ -758,93 +654,43 @@ class FirstWindow(QMainWindow, Ui_MainWindow):
                 self.row1 = None
                 conn.close()
 
-    def put_stock_data(self):
-        self.date = []
-        self.id = []
-        self.name = []
-        self.model = []
-        self.unit = []
-        self.cost = []
-        self.num = []
-        self.sum = []
-        conn = sqlite3.connect(sql_file)
-        c = conn.cursor()
-        cursor = c.execute("SELECT *  from GOODS")
-        results = cursor.fetchall()
+    def write_stock_data(self, results):
+        for i in range(self.table_stock.rowCount()):
+            self.table_stock.removeRow(0)
+        i = 0
         for row in results:
-            self.date.append(row[0])
-            self.id.append(row[1])
-            self.name.append(row[2])
-            self.model.append(row[3])
-            self.unit.append(row[4])
-            self.cost.append(row[5])
-            self.num.append(row[6])
-            self.sum.append(row[7])
-        conn.close()
-        rows = min(len(self.date), len(self.id), len(self.name), len(self.model),
-                   len(self.unit), len(self.cost), len(self.num), len(self.sum))
-        self.table_stock.setRowCount(rows)
-        for i in range(rows):
+            self.table_stock.setRowCount(len(results))
             for m in range(8):
-                value = [self.date[i], self.id[i], self.name[i], self.model[i],
-                         self.unit[i], self.cost[i], self.num[i], self.sum[i]]
                 item = QTableWidgetItem()
                 self.table_stock.setItem(i, m, item)
                 item_add = self.table_stock.item(i, m)
-                item_add.setText(str(value[m]))
+                item_add.setText(str(row[m]))
                 item_add.setTextAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
+            i = i + 1
+
+    def put_stock_data(self):
+        conn = sqlite3.connect(sql_file)
+        results = conn.cursor().execute("SELECT *  from GOODS").fetchall()
+        self.write_stock_data(results)
+        conn.close()
 
     def clean_stock_search(self):
         self.text_stock_1.clear()
-        self.search_stock_by('name')
+        self.put_stock_data()
 
     def search_stock_by(self, var):
         self.row1 = None
-        self.date = []
-        self.id = []
-        self.name = []
-        self.model = []
-        self.unit = []
-        self.cost = []
-        self.num = []
-        self.sum = []
         conn = sqlite3.connect(sql_file)
-        c = conn.cursor()
         if var == 'date':
-            d = self.text_stock_1.text().replace('.', '/')
+            text = self.text_stock_1.text().replace('.', '/')
         else:
-            d = self.text_stock_1.text()
-        if not d:
-            m = self.table_stock.rowCount()
-            for i in range(m):
-                self.table_stock.removeRow(0)
+            text = self.text_stock_1.text()
+        if not text:
             self.put_stock_data()
         else:
-            results = c.execute("SELECT * FROM GOODS WHERE " + var + " like '%" + d + "%'").fetchall()
-            for row in results:
-                self.date.append(row[0])
-                self.id.append(row[1])
-                self.name.append(row[2])
-                self.model.append(row[3])
-                self.unit.append(row[4])
-                self.cost.append(row[5])
-                self.num.append(row[6])
-                self.sum.append(row[7])
-            rows = min(len(self.date), len(self.id), len(self.name), len(self.model),
-                       len(self.unit), len(self.cost), len(self.num), len(self.sum))
-            m = self.table_stock.rowCount()
-            for i in range(m):
-                self.table_stock.removeRow(0)
-            self.table_stock.setRowCount(rows)
-            for i in range(rows):
-                for m in range(8):
-                    value = [self.date[i], self.id[i], self.name[i], self.model[i],
-                             self.unit[i], self.cost[i], self.num[i], self.sum[i]]
-                    item = QTableWidgetItem()
-                    self.table_stock.setItem(i, m, item)
-                    item_add = self.table_stock.item(i, m)
-                    item_add.setText(str(value[m]))
-                    item_add.setTextAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
+            results = conn.cursor().execute("SELECT * FROM GOODS WHERE " + var + " like '%" + text + "%'").fetchall()
+            self.write_stock_data(results)
+            conn.close()
 
     def get_stock_click(self, row, col):
         self.table_stock.item(row, col).text()
@@ -877,83 +723,44 @@ class FirstWindow(QMainWindow, Ui_MainWindow):
                     QMessageBox.information(self, '提示', '删除成功！')
             self.row1 = None
 
-    def put_prepare_goods_data(self):
-        self.id = []
-        self.name = []
-        self.reminder = []
-        self.model = []
-        self.unit = []
-        self.price = []
-        conn = sqlite3.connect(sql_file)
-        c = conn.cursor()
-        cursor = c.execute("select * from COMPANY order by id")
-        results = cursor.fetchall()
+    def write_prepare_goods_data(self, results):
+        for i in range(self.table_prepare_goods.rowCount()):
+            self.table_prepare_goods.removeRow(0)
+        i = 0
         for row in results:
-            self.id.append(row[0])
-            self.name.append(row[1])
-            self.reminder.append(row[2])
-            self.model.append(row[3])
-            self.unit.append(row[4])
-            self.price.append(row[6])
-        conn.close()
-        rows = min(len(self.id), len(self.name), len(self.reminder), len(self.model), len(self.unit), len(self.price))
-        self.table_prepare_goods.setRowCount(rows)
-        for i in range(rows):
+            rows = [row[0], row[1], row[2], row[3], row[4], row[6]]
+            self.table_prepare_goods.setRowCount(len(results))
             for m in range(6):
-                value = [self.id[i], self.name[i], self.reminder[i], self.model[i], self.unit[i], self.price[i]]
                 item = QTableWidgetItem()
                 self.table_prepare_goods.setItem(i, m, item)
                 item_add = self.table_prepare_goods.item(i, m)
-                item_add.setText(str(value[m]))
+                item_add.setText(str(rows[m]))
                 item_add.setTextAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
+            i = i + 1
+
+    def put_prepare_goods_data(self):
+        conn = sqlite3.connect(sql_file)
+        results = conn.cursor().execute("select * from COMPANY order by id").fetchall()
+        self.write_prepare_goods_data(results)
+        conn.close()
 
     def clean_prepare_goods_search(self):
         self.text_sell.clear()
-        self.search_prepare_goods_by('name')
+        self.put_prepare_goods_data()
 
     def search_prepare_goods_by(self, var):
         self.row1 = None
-        self.id = []
-        self.name = []
-        self.reminder = []
-        self.model = []
-        self.unit = []
-        self.cost = []
-        self.price = []
         conn = sqlite3.connect(sql_file)
-        c = conn.cursor()
         if var == 'date':
-            d = self.text_sell.text().replace('.', '/')
+            text = self.text_sell.text().replace('.', '/')
         else:
-            d = self.text_sell.text()
-        if not d:
-            m = self.table_prepare_goods.rowCount()
-            for i in range(m):
-                self.table_prepare_goods.removeRow(0)
+            text = self.text_sell.text()
+        if not text:
             self.put_prepare_goods_data()
         else:
-            results = c.execute("SELECT * FROM COMPANY WHERE " + var + " like '%" + d + "%'").fetchall()
-            for row in results:
-                self.id.append(row[0])
-                self.name.append(row[1])
-                self.reminder.append(row[2])
-                self.model.append(row[3])
-                self.unit.append(row[4])
-                self.price.append(row[6])
-            rows = min(len(self.id), len(self.name), len(self.reminder),
-                       len(self.model), len(self.unit), len(self.price))
-            m = self.table_prepare_goods.rowCount()
-            for i in range(m):
-                self.table_prepare_goods.removeRow(0)
-            self.table_prepare_goods.setRowCount(rows)
-            for i in range(rows):
-                for m in range(6):
-                    value = [self.id[i], self.name[i], self.reminder[i], self.model[i], self.unit[i], self.price[i]]
-                    item = QTableWidgetItem()
-                    self.table_prepare_goods.setItem(i, m, item)
-                    item_add = self.table_prepare_goods.item(i, m)
-                    item_add.setText(str(value[m]))
-                    item_add.setTextAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
+            results = conn.cursor().execute("SELECT * FROM COMPANY WHERE " + var + " like '%" + text + "%'").fetchall()
+            self.write_prepare_goods_data(results)
+            conn.close()
 
     def get_prepare_goods_click(self, row, col):
         self.table_prepare_goods.item(row, col).text()
@@ -1012,45 +819,29 @@ class FirstWindow(QMainWindow, Ui_MainWindow):
                         QMessageBox.warning(self, '警告！', '更新失败，数据库写入操作失败！')
                     else:
                         self.table_prepare_goods.item(int(self.row1), 2).setText(str(after_num))
-                        self.clean_goods_search()
+                        self.put_goods_data()
                         self.put_sell_out_data()
                         conn.close()
                         QMessageBox.information(self, '提示！', '更新成功！')
                 self.row1 = None
 
     def put_sell_out_data(self):
-        self.id = []
-        self.name = []
-        self.model = []
-        self.unit = []
-        self.num = []
-        self.price = []
-        self.sum = []
         conn = sqlite3.connect(sql_file)
         c = conn.cursor()
         results = c.execute("SELECT * FROM SELL").fetchall()
-        for row in results:
-            self.id.append(row[0])
-            self.name.append(row[1])
-            self.model.append(row[2])
-            self.unit.append(row[3])
-            self.num.append(row[4])
-            self.price.append(row[5])
-            self.sum.append(row[6])
-        rows = min(len(self.id), len(self.name), len(self.model),
-                   len(self.unit), len(self.num), len(self.price), len(self.sum))
-        m = self.table_sell_out.rowCount()
-        for i in range(m):
+        for i in range(self.table_sell_out.rowCount()):
             self.table_sell_out.removeRow(0)
-        self.table_sell_out.setRowCount(rows)
-        for i in range(rows):
+        i = 0
+        for row in results:
+            self.table_sell_out.setRowCount(len(results))
             for m in range(7):
-                value = [self.id[i], self.name[i], self.model[i], self.unit[i], self.num[i], self.price[i], self.sum[i]]
                 item = QTableWidgetItem()
                 self.table_sell_out.setItem(i, m, item)
                 item_add = self.table_sell_out.item(i, m)
-                item_add.setText(str(value[m]))
+                item_add.setText(str(row[m]))
                 item_add.setTextAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
+            i = i + 1
+        conn.close()
 
     def get_sell_out_click(self, row, col):
         self.table_sell_out.item(row, col).text()
@@ -1095,34 +886,17 @@ class FirstWindow(QMainWindow, Ui_MainWindow):
     def sell_out(self):
         if self.table_sell_out.rowCount() == 0:
             return
-        i = datetime.datetime.now()
-        wb = Workbook()
-        ws = wb.active
-        ws.title = "Sheet 1"
         conn = sqlite3.connect(sql_file)
-        c = conn.cursor()
-        cursor = c.execute("SELECT *  from SELL")
-        results = cursor.fetchall()
-        self.name = []
-        self.model = []
-        self.unit = []
-        self.num = []
-        self.price = []
-        self.sum = []
-        for row in results:
-            self.name.append(row[1])
-            self.model.append(row[2])
-            self.unit.append(row[3])
-            self.num.append(row[4])
-            self.price.append(row[5])
-            self.sum.append(row[6])
-        cursor = c.execute("SELECT *  from INFO").fetchall()
-        get_info = cursor[0]
+        get_info = conn.cursor().execute("SELECT *  from INFO").fetchall()[0]
         name = get_info[0]
         locale = get_info[1]
         number = get_info[2]
         if name == '' or locale == '' or number == '':
             QMessageBox.information(self, '提示！', '未填写Excel信息！')
+        i = datetime.datetime.now()
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Sheet 1"
         ws.cell(1, 2).value = name
         ws.cell(1, 2).font = Font(size="16")
         ws.cell(2, 1).value = '客户：'
@@ -1134,56 +908,54 @@ class FirstWindow(QMainWindow, Ui_MainWindow):
             ws.cell(3, n).value = var[i]
             ws.cell(3, n).border = border_set
             ws.cell(3, n).alignment = alignment_center
-        n = 0
-        for var in [self.name, self.model, self.unit, self.num, self.price, self.sum]:
-            m = var[:]
+        results = conn.cursor().execute("SELECT *  from SELL").fetchall()
+        n = 3
+        m = 0
+        for row in results:
+            rows = [row[1], row[2], row[3], row[4], row[5], row[6]]
             n = n + 1
-            for i in range(len(m)):
+            m = m + 1
+            ws.cell(n, 1).value = m
+            ws.cell(n, 1).border = border_set
+            ws.cell(n, 1).alignment = alignment_center
+            for i in range(len(rows)):
                 try:
-                    float(m[i])
+                    float(rows[i])
                 except ValueError:
-                    ws.cell(i + 4, n + 1).value = m[i]
-                    ws.cell(i + 4, n + 1).border = border_set
-                    ws.cell(i + 4, n + 1).alignment = alignment_center
+                    ws.cell(n, i + 2).value = rows[i]
+                    ws.cell(n, i + 2).border = border_set
+                    ws.cell(n, i + 2).alignment = alignment_center
                 else:
-                    ws.cell(i + 4, n + 1).value = m[i]
-                    ws.cell(i + 4, n + 1).border = border_set
-                    ws.cell(i + 4, n + 1).data_type = "int"
-                    ws.cell(i + 4, n + 1).alignment = alignment_center
-        n = 0
-        for i in range(len(m)):
-            n = n + 1
-            ws.cell(i + 4, 1).value = n
-            ws.cell(i + 4, 1).border = border_set
-            ws.cell(i + 4, 1).alignment = alignment_center
-        mm = str(len(m) + 3)
-        if int(mm) == 4:
+                    ws.cell(n, i + 2).value = rows[i]
+                    ws.cell(n, i + 2).border = border_set
+                    ws.cell(n, i + 2).data_type = "int"
+                    ws.cell(n, i + 2).alignment = alignment_center
+        conn.close()
+        if n == 4:
             bbc = '=G4'
         else:
-            bbc = '=SUM(G4:G' + mm + ')'
-        mm = str(int(mm) + 1)
+            bbc = '=SUM(G4:G' + str(n) + ')'
+        mm = str(n + 1)
         bb = '=TEXT(SUBSTITUTE(IF(G' + mm + '="","",IF(MOD(G' + mm + ',1)=0,TEXT(INT(G' + mm + \
              '),"[DBNum2][$-804]G/通用格式元整"),(TEXT(INT(G' + mm + '),"[DBNum2][$-804]G/通用格式元")&TEXT((INT(G' + mm + \
              '*10)-INT(G' + mm + ')*10),"[DBNum2][$-804]G/通用格式角")&TEXT((INT(G' + mm + '*100)-INT(G' + mm + \
              '*10)*10),"[DBNum2][$-804]G/通用格式分")))),"零角","零"),)'
         var = [' ', '大写', bb, ' ', ' ', ' ', bbc]
-        n = 0
+        m = 0
         for i in range(7):
-            n = n + 1
-            ws.cell(len(m) + 4, n).value = var[i]
-            ws.cell(len(m) + 4, n).border = border_set
-            ws.cell(len(m) + 4, n).alignment = alignment_center
+            m = m + 1
+            ws.cell(n + 1, m).value = var[i]
+            ws.cell(n + 1, m).border = border_set
+            ws.cell(n + 1, m).alignment = alignment_center
         var = [locale, '电话：', number]
-        n = 0
         for i in range(3):
-            n = n + 1
-            ws.cell(len(m) + 6, n + 2).value = var[i]
+            ws.cell(n + 3, i + 3).value = var[i]
         ws.column_dimensions['B'].width = 20.0
         ws.column_dimensions['C'].width = 20.0
         ws.merge_cells('E2:F2')
         ws.merge_cells('B1:C1')
         ws.merge_cells('B2:C2')
-        merge_tel = 'E' + str(len(m) + 6) + ':' + 'F' + str(len(m) + 6)
+        merge_tel = 'E' + str(n + 3) + ':' + 'F' + str(n + 3)
         ws.merge_cells(merge_tel)
         if self.checkBox_1.isChecked():
             path, ok = QFileDialog.getSaveFileName(self, '保存文件', desktop_path + '/出货单.xlsx', "Excel (*.xlsx)")
@@ -1282,8 +1054,7 @@ class FirstWindow(QMainWindow, Ui_MainWindow):
     def put_setting_data(self):
         conn = sqlite3.connect(sql_file)
         c = conn.cursor()
-        result = c.execute("SELECT *  from INFO").fetchall()
-        info = result[0]
+        info = c.execute("SELECT *  from INFO").fetchall()[0]
         name = info[0]
         locale = info[1]
         number = info[2]
@@ -1360,33 +1131,15 @@ class FirstWindow(QMainWindow, Ui_MainWindow):
         wb = Workbook()
         ws = wb.active
         ws.title = "Sheet 1"
-        conn = sqlite3.connect(sql_file)
-        c = conn.cursor()
-        cursor = c.execute("SELECT *  from COMPANY")
-        results = cursor.fetchall()
-        self.id = []
-        self.name = []
-        self.reminder = []
-        self.model = []
-        self.unit = []
-        self.cost = []
-        self.price = []
-        for row in results:
-            self.id.append(row[0])
-            self.name.append(row[1])
-            self.reminder.append(row[2])
-            self.model.append(row[3])
-            self.unit.append(row[4])
-            self.cost.append(row[5])
-            self.price.append(row[6])
-        n = 0
         title = ['商品id', '名称', '余货量', '型号', '单位', '成本价', '单价']
         ws.append(title)
-        for var in [self.id, self.name, self.reminder, self.model, self.unit, self.cost, self.price]:
-            m = var[:]
+        conn = sqlite3.connect(sql_file)
+        results = conn.cursor().execute("SELECT *  from COMPANY").fetchall()
+        n = 1
+        for row in results:
             n = n + 1
-            for i in range(len(m)):
-                ws.cell(i + 2, n).value = m[i]
+            for i in range(len(row)):
+                ws.cell(n, i + 1).value = row[i]
         try:
             wb.save(path)
         except PermissionError:
@@ -1421,48 +1174,20 @@ class FirstWindow(QMainWindow, Ui_MainWindow):
         wb = Workbook()
         ws = wb.active
         ws.title = "Sheet 1"
-        conn = sqlite3.connect(sql_file)
-        c = conn.cursor()
-        cursor = c.execute("SELECT * FROM SALE WHERE date like '%" + d + "%'")
-        results = cursor.fetchall()
-        self.date = []
-        self.id = []
-        self.name = []
-        self.model = []
-        self.unit = []
-        self.cost = []
-        self.price = []
-        self.num = []
-        self.cost_sum = []
-        self.sum = []
-        self.get = []
-        for row in results:
-            self.date.append(row[0])
-            self.id.append(row[1])
-            self.name.append(row[2])
-            self.model.append(row[3])
-            self.unit.append(row[4])
-            self.cost.append(row[5])
-            self.price.append(row[6])
-            self.num.append(row[7])
-            self.cost_sum.append(row[8])
-            self.sum.append(row[9])
-            self.get.append(row[10])
-        n = 0
         title = ['日期', '商品id', '名称', '型号', '单位', '成本价', '单价', '售出数量', '总成本价', '总销售额', '利润']
         ws.append(title)
-        for var in [self.date, self.id, self.name, self.model, self.unit, self.cost, self.price, self.num,
-                    self.cost_sum, self.sum, self.get]:
-            m = var[:]
+        conn = sqlite3.connect(sql_file)
+        results = conn.cursor().execute("SELECT * FROM SALE WHERE date like '%" + d + "%'").fetchall()
+        n = 1
+        for row in results:
             n = n + 1
-            for i in range(len(m)):
-                ws.cell(i + 2, n).value = m[i]
-        row1 = ws.max_row
-        row = ws.max_row + 1
-        ws.cell(row, 8).value = '合计'
-        ws.cell(row, 9).value = '=SUM(I2:I' + str(row1) + ')'
-        ws.cell(row, 10).value = '=SUM(J2:J' + str(row1) + ')'
-        ws.cell(row, 11).value = '=SUM(K2:K' + str(row1) + ')'
+            for i in range(len(row)):
+                ws.cell(n, i + 1).value = row[i]
+        rows = ws.max_row
+        ws.cell(rows + 1, 8).value = '合计'
+        ws.cell(rows + 1, 9).value = '=SUM(I2:I' + str(rows) + ')'
+        ws.cell(rows + 1, 10).value = '=SUM(J2:J' + str(rows) + ')'
+        ws.cell(rows + 1, 11).value = '=SUM(K2:K' + str(rows) + ')'
         try:
             wb.save(path)
         except PermissionError:
@@ -1479,48 +1204,20 @@ class FirstWindow(QMainWindow, Ui_MainWindow):
         wb = Workbook()
         ws = wb.active
         ws.title = "Sheet 1"
-        conn = sqlite3.connect(sql_file)
-        c = conn.cursor()
-        cursor = c.execute("SELECT *  from SALE")
-        results = cursor.fetchall()
-        self.date = []
-        self.id = []
-        self.name = []
-        self.model = []
-        self.unit = []
-        self.cost = []
-        self.price = []
-        self.num = []
-        self.cost_sum = []
-        self.sum = []
-        self.get = []
-        for row in results:
-            self.date.append(row[0])
-            self.id.append(row[1])
-            self.name.append(row[2])
-            self.model.append(row[3])
-            self.unit.append(row[4])
-            self.cost.append(row[5])
-            self.price.append(row[6])
-            self.num.append(row[7])
-            self.cost_sum.append(row[8])
-            self.sum.append(row[9])
-            self.get.append(row[10])
-        n = 0
         title = ['日期', '商品id', '名称', '型号', '单位', '成本价', '单价', '售出数量', '总成本价', '总销售额', '利润']
         ws.append(title)
-        for var in [self.date, self.id, self.name, self.model, self.unit, self.cost, self.price, self.num,
-                    self.cost_sum, self.sum, self.get]:
-            m = var[:]
+        conn = sqlite3.connect(sql_file)
+        results = conn.cursor().execute("SELECT *  from SALE").fetchall()
+        n = 1
+        for row in results:
             n = n + 1
-            for i in range(len(m)):
-                ws.cell(i + 2, n).value = m[i]
-        row1 = ws.max_row
-        row = ws.max_row + 1
-        ws.cell(row, 8).value = '合计'
-        ws.cell(row, 9).value = '=SUM(I2:I' + str(row1) + ')'
-        ws.cell(row, 10).value = '=SUM(J2:J' + str(row1) + ')'
-        ws.cell(row, 11).value = '=SUM(K2:K' + str(row1) + ')'
+            for i in range(len(row)):
+                ws.cell(n, i + 1).value = row[i]
+        rows = ws.max_row
+        ws.cell(rows + 1, 8).value = '合计'
+        ws.cell(rows + 1, 9).value = '=SUM(I2:I' + str(rows) + ')'
+        ws.cell(rows + 1, 10).value = '=SUM(J2:J' + str(rows) + ')'
+        ws.cell(rows + 1, 11).value = '=SUM(K2:K' + str(rows) + ')'
         try:
             wb.save(path)
         except PermissionError:
@@ -1654,16 +1351,16 @@ class FirstWindow(QMainWindow, Ui_MainWindow):
         conn = sqlite3.connect(sql_file)
         c = conn.cursor()
         try:
-            result = c.execute("SELECT PRINTER  from INFO").fetchall()
+            result = c.execute("SELECT PRINTER  from INFO").fetchall()[0]
         except sqlite3.OperationalError:
             c.execute("alter table INFO add PRINTER TEXT NULL")
             conn.commit()
-        if not result[0][0] or result[0][0] == '':
+        if not result[0] or result[0] == '':
             c.execute("UPDATE INFO set PRINTER = '%s'" % GetDefaultPrinter())
             conn.commit()
             result = c.execute("SELECT PRINTER  from INFO").fetchall()
-        self.comboBox.setCurrentIndex(printers.index(result[0][0]))
-        self.label_11.setText(result[0][0])
+        self.comboBox.setCurrentIndex(printers.index(result[0]))
+        self.label_11.setText(result[0])
         conn.close()
 
     def update_printer(self):

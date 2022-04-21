@@ -1,10 +1,9 @@
-import datetime
 import os
 import re
 import shutil
 import sqlite3
 
-from PySide6.QtCore import QThread, Signal
+from PySide6.QtCore import QThread, Signal, QDate, QTime
 from PySide6.QtGui import QGuiApplication
 from PySide6.QtWidgets import QMessageBox, QInputDialog, QFileDialog, QMainWindow, QHeaderView, QApplication, QDialog
 from openpyxl.reader.excel import load_workbook
@@ -32,6 +31,14 @@ border_set = Border(left=Side(style='thin', color=colors.BLACK),
                     top=Side(style='thin', color=colors.BLACK),
                     bottom=Side(style='thin', color=colors.BLACK))
 
+styles = '''     
+QCalendarWidget QWidget#qt_calendar_navigationbar {background-color: rgb(255, 255, 255);}
+QToolButton#qt_calendar_monthbutton,#qt_calendar_yearbutton {color: rgb(0, 0, 0);font: 微软雅黑;}
+QCalendarWidget QToolButton#qt_calendar_prevmonth{qproperty-icon: url(left.png);}
+QCalendarWidget QToolButton#qt_calendar_nextmonth{qproperty-icon: url(right.png);}
+QCalendarWidget QTableView {alternate-background-color: rgb(245, 245, 245);background-color: rgb(245, 245, 245);}
+'''
+
 version = 'v1.0'
 
 
@@ -54,8 +61,7 @@ def backup():
     is_backup_dir = os.path.exists(backup_dir)
     if not is_backup_dir:
         os.makedirs(backup_dir)
-    i = datetime.datetime.now()
-    date1 = "%s-%s-%s" % (i.year, i.month, i.day)
+    date1 = QDate.currentDate().toString(Qt.ISODate)
     ppdir = backup_dir + '/' + date1
     isdir = os.path.exists(ppdir)
     if not isdir:
@@ -330,7 +336,30 @@ class FirstWindow(QMainWindow, Ui_MainWindow):
 
         self.pushButton_2.clicked.connect(self.update_printer)
 
-        # self.comboBox.activated.connect(self.update_printer)
+        self.dateEdit.setDate(QDate.currentDate())
+        self.dateEdit.calendarWidget().setStyleSheet(styles)
+        self.dateEdit_2.setDate(QDate.currentDate())
+        self.dateEdit_2.calendarWidget().setStyleSheet(styles)
+
+    def exec_sqlite(self, e, sql):
+        conn = sqlite3.connect(sql_file)
+        if e == 'r':
+            results = conn.cursor().execute(sql).fetchall()
+            conn.close()
+            return results
+        elif e == 'w':
+            try:
+                conn.cursor().execute(sql)
+                conn.commit()
+            except (sqlite3.ProgrammingError, sqlite3.OperationalError):
+                conn.rollback()
+                QMessageBox.warning(self, '警告！', '数据库操作失败！')
+            except sqlite3.IntegrityError:
+                return 0
+            else:
+                return 1
+            finally:
+                conn.close()
 
     def merge_new_goods_table(self):
         row = self.table_new_goods.rowCount()
@@ -341,8 +370,6 @@ class FirstWindow(QMainWindow, Ui_MainWindow):
         merge_flag = 0
         err = []
         values = []
-        conn = sqlite3.connect(sql_file)
-        c = conn.cursor()
         for i in range(row):
             for m in range(7):
                 try:
@@ -354,19 +381,16 @@ class FirstWindow(QMainWindow, Ui_MainWindow):
                 sql = "INSERT INTO COMPANY (ID,NAME,REMINDER,MODEL,UNIT,COST,PRICE) \
                                            VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s')" % \
                       (value[0], value[1], value[2], value[3], value[4], value[5], value[6])
-                try:
-                    c.execute(sql)
-                    conn.commit()
-                except sqlite3.IntegrityError:
-                    err.append('id_err')
-                    error_flag = 1
-                else:
+                status = self.exec_sqlite('w', sql)
+                if status == 1:
                     merge_flag = 1
                     values.append(i)
+                elif status == 0:
+                    err.append('id_err')
+                    error_flag = 1
             else:
                 err.append('value_err')
             value = []
-        conn.close()
         self.clean_goods_search()
         self.clean_prepare_goods_search()
         for i in reversed(values):
@@ -398,17 +422,9 @@ class FirstWindow(QMainWindow, Ui_MainWindow):
             reply = QMessageBox.question(self, '警告', '是否删除所选数据？')
             if reply == QMessageBox.Yes:
                 del_id = self.click(0)
-                conn = sqlite3.connect(sql_file)
-                c = conn.cursor()
                 sql = "DELETE from COMPANY where ID='%s'" % del_id
-                try:
-                    c.execute(sql)
-                    conn.commit()
-                except (sqlite3.ProgrammingError, sqlite3.OperationalError):
-                    conn.rollback()
-                    QMessageBox.warning(self, '提示', '删除失败，数据库删除操作失败！')
-                else:
-                    conn.close()
+                status = self.exec_sqlite('w', sql)
+                if status == 1:
                     self.table_goods.removeRow(self.table_goods.currentRow())
                     QMessageBox.information(self, '提示', '删除成功！')
             self.row1 = None
@@ -433,36 +449,21 @@ class FirstWindow(QMainWindow, Ui_MainWindow):
             else:
                 after_num = num + int(reminder)
                 cost_sum = num * int(cost)
-                num = num
-                conn = sqlite3.connect(sql_file)
-                c = conn.cursor()
                 sql = "UPDATE COMPANY set REMINDER = '%s' where ID='%s'" % \
                       (after_num, self.click(0))
-                try:
-                    c.execute(sql)
-                    conn.commit()
-                except (sqlite3.ProgrammingError, sqlite3.OperationalError):
-                    conn.rollback()
-                    QMessageBox.warning(self, '警告！', '更新失败，数据库写入操作失败！')
-                else:
+                status = self.exec_sqlite('w', sql)
+                if status == 1:
                     self.table_goods.item(int(self.row1), 2).setText(str(after_num))
-                i = datetime.datetime.now()
-                date1 = "%s/%s/%s %s:%s:%s" % (i.year, i.month, i.day, i.hour, i.minute, i.second)
+                date1 = QDate.currentDate().toString(Qt.ISODate) + ' ' + QTime.currentTime().toString(Qt.ISODate)
                 sql1 = "INSERT INTO GOODS (DATE,ID,NAME,MODEL,UNIT,COST,NUM,COST_SUM) \
-                       VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')" % \
-                       (date1, id1, name, model, unit,
-                        cost, num, cost_sum)
-                try:
-                    c.execute(sql1)
-                    conn.commit()
-                except (sqlite3.ProgrammingError, sqlite3.OperationalError):
-                    conn.rollback()
-                    QMessageBox.warning(self, '警告！', '更新失败，数据库写入操作失败！')
-                conn.close()
-                self.clean_prepare_goods_search()
-                self.clean_stock_search()
-                QMessageBox.information(self, '提示！', '更新成功！')
-                self.row1 = None
+                                           VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')" % \
+                       (date1, id1, name, model, unit, cost, num, cost_sum)
+                status = self.exec_sqlite('w', sql1)
+                if status == 1:
+                    self.clean_prepare_goods_search()
+                    self.clean_stock_search()
+                    QMessageBox.information(self, '提示！', '更新成功！')
+                    self.row1 = None
 
     def clean_goods_search(self):
         self.text_1.clear()
@@ -470,32 +471,27 @@ class FirstWindow(QMainWindow, Ui_MainWindow):
 
     def search_goods_by(self, var):
         self.row1 = None
-        conn = sqlite3.connect(sql_file)
         text = self.text_1.text()
         if not text:
             self.put_goods_data()
         else:
-            results = conn.cursor().execute("SELECT * FROM COMPANY WHERE " + var + " like '%" + text + "%'").fetchall()
+            sql = "SELECT * FROM COMPANY WHERE " + var + " like '%" + text + "%'"
+            results = self.exec_sqlite('r', sql)
             self.write_goods_data(results)
-            conn.close()
 
     def put_goods_data(self):
-        conn = sqlite3.connect(sql_file)
-        c = conn.cursor()
-        cursor = c.execute("select * from COMPANY order by id")
-        results = cursor.fetchall()
+        sql = "select * from COMPANY order by id"
+        results = self.exec_sqlite('r', sql)
         self.write_goods_data(results)
-        conn.close()
 
     def write_goods_data(self, results):
         for i in range(self.table_goods.rowCount()):
             self.table_goods.removeRow(0)
         i = 0
+        self.table_goods.setRowCount(len(results))
         for row in results:
-            self.table_goods.setRowCount(len(results))
             for m in range(7):
-                item = QTableWidgetItem()
-                self.table_goods.setItem(i, m, item)
+                self.table_goods.setItem(i, m, QTableWidgetItem())
                 item_add = self.table_goods.item(i, m)
                 item_add.setText(str(row[m]))
                 item_add.setTextAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
@@ -505,23 +501,19 @@ class FirstWindow(QMainWindow, Ui_MainWindow):
         for i in range(self.table_sale.rowCount()):
             self.table_sale.removeRow(0)
         i = 0
+        self.table_sale.setRowCount(len(results))
         for row in results:
-            self.table_sale.setRowCount(len(results))
             for m in range(11):
-                item = QTableWidgetItem()
-                self.table_sale.setItem(i, m, item)
+                self.table_sale.setItem(i, m, QTableWidgetItem())
                 item_add = self.table_sale.item(i, m)
                 item_add.setText(str(row[m]))
                 item_add.setTextAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
             i = i + 1
 
     def put_sale_data(self):
-        conn = sqlite3.connect(sql_file)
-        c = conn.cursor()
-        cursor = c.execute("SELECT *  from SALE")
-        results = cursor.fetchall()
+        sql = "SELECT *  from SALE"
+        results = self.exec_sqlite('r', sql)
         self.write_sale_data(results)
-        conn.close()
 
     def clean_sale_search(self):
         self.text_sale_1.clear()
@@ -529,19 +521,16 @@ class FirstWindow(QMainWindow, Ui_MainWindow):
 
     def search_sale_by(self, var):
         self.row1 = None
-        conn = sqlite3.connect(sql_file)
         if var == 'date':
-            text = self.text_sale_1.text().replace('.', '/')
-            if self.text_sale_1.text().count('.') == 2:
-                text = text + ' '
+            text = self.dateEdit_2.date().toString(Qt.ISODate)
         else:
             text = self.text_sale_1.text()
         if not text:
             self.put_sale_data()
         else:
-            results = conn.cursor().execute("SELECT * FROM SALE WHERE " + var + " like '%" + text + "%'").fetchall()
+            sql = "SELECT * FROM SALE WHERE " + var + " like '%" + text + "%'"
+            results = self.exec_sqlite('r', sql)
             self.write_sale_data(results)
-            conn.close()
 
     def get_sale_click(self, row, col):
         self.table_sale.item(row, col).text()
@@ -559,17 +548,9 @@ class FirstWindow(QMainWindow, Ui_MainWindow):
             if reply == QMessageBox.Yes:
                 del_date = self.sale_click(0)
                 del_id = self.sale_click(1)
-                conn = sqlite3.connect(sql_file)
-                c = conn.cursor()
                 sql = "DELETE from SALE where DATE='%s' and ID='%s'" % (del_date, del_id)
-                try:
-                    c.execute(sql)
-                    conn.commit()
-                except (sqlite3.ProgrammingError, sqlite3.OperationalError):
-                    conn.rollback()
-                    QMessageBox.warning(self, '提示', '删除失败，数据库删除操作失败！')
-                else:
-                    conn.close()
+                status = self.exec_sqlite('w', sql)
+                if status == 1:
                     self.table_sale.removeRow(self.table_sale.currentRow())
                     QMessageBox.information(self, '提示', '删除成功！')
             self.row1 = None
@@ -586,32 +567,22 @@ class FirstWindow(QMainWindow, Ui_MainWindow):
             elif ok is True and num <= 0:
                 QMessageBox.information(self, '提示！', '请输入一个大于 0 的数！')
             else:
-                conn = sqlite3.connect(sql_file)
-                c = conn.cursor()
+                sql = "SELECT REMINDER from COMPANY  where ID='%s' and NAME='%s' and MODEL='%s' and COST='%s' and " \
+                      "PRICE='%s'" % (self.sale_click(1), self.sale_click(2), self.sale_click(3), self.sale_click(5),
+                                      self.sale_click(6))
                 try:
-                    c.execute(
-                        "SELECT REMINDER from COMPANY  where ID='%s' and NAME='%s' "
-                        "and MODEL='%s' and COST='%s' and PRICE='%s'" %
-                        (self.sale_click(1), self.sale_click(2), self.sale_click(3),
-                         self.sale_click(5), self.sale_click(6))).fetchall()[0]
+                    self.exec_sqlite('r', sql)[0]
                 except IndexError:
                     QMessageBox.warning(self, '提示！', '退货失败，数据库没有相同商品！\n'
                                                      '注：商品id、商品名称、商品型号、成本价和单价需要同时匹配。')
                     return
-                e = c.execute(
-                    "SELECT * FROM SALE WHERE date = '%s' and id = '%s'" % (
-                        self.sale_click(0), self.sale_click(1))).fetchall()
-                results = e[0]
+                sql = "SELECT * FROM SALE WHERE date = '%s' and id = '%s'" % (self.sale_click(0), self.sale_click(1))
+                results = self.exec_sqlite('r', sql)[0]
                 after_num = int(results[7]) - int(num)
                 if after_num == 0:
                     sql = "DELETE from SALE where DATE='%s' and ID='%s'" % (self.sale_click(0), self.sale_click(1))
-                    try:
-                        c.execute(sql)
-                        conn.commit()
-                    except (sqlite3.ProgrammingError, sqlite3.OperationalError):
-                        conn.rollback()
-                        QMessageBox.warning(self, '警告！', '删除失败，数据库删除操作失败！')
-                    else:
+                    status = self.exec_sqlite('w', sql)
+                    if status == 1:
                         self.table_sale.removeRow(self.table_sale.currentRow())
                 elif after_num < 0:
                     QMessageBox.warning(self, '警告！', '更新失败，退货数量不能大于售出数量！')
@@ -620,58 +591,44 @@ class FirstWindow(QMainWindow, Ui_MainWindow):
                     after_cost_sum = after_num * int(self.sale_click(5))
                     after_price_sum = after_num * int(self.sale_click(6))
                     after_get = after_price_sum - after_cost_sum
-                    try:
-                        c.execute(
-                            "UPDATE SALE set NUM='%s', COST_SUM='%s',SUM='%s',GET='%s' where DATE = '%s' and ID = '%s'"
-                            % (after_num, after_cost_sum, after_price_sum, after_get, self.sale_click(0),
-                               self.sale_click(1)))
-                        conn.commit()
-                    except (sqlite3.ProgrammingError, sqlite3.OperationalError):
-                        conn.rollback()
-                        QMessageBox.warning(self, '警告！', '更新失败，数据库写入操作失败！')
-                    else:
+                    sql = "UPDATE SALE set NUM='%s', COST_SUM='%s',SUM='%s',GET='%s' where DATE = '%s' and ID = '%s'" \
+                          % (after_num, after_cost_sum, after_price_sum, after_get,
+                             self.sale_click(0), self.sale_click(1))
+                    status = self.exec_sqlite('w', sql)
+                    if status == 1:
                         self.table_sale.item(int(self.row1), 7).setText(str(after_num))
                         self.table_sale.item(int(self.row1), 8).setText(str(after_cost_sum))
                         self.table_sale.item(int(self.row1), 9).setText(str(after_price_sum))
                         self.table_sale.item(int(self.row1), 10).setText(str(after_get))
-                try:
-                    goods_reminder = c.execute(
-                        "SELECT REMINDER from COMPANY  where ID='%s'" % self.sale_click(1)).fetchall()
-                    goods_reminder1 = goods_reminder[0]
-                    goods_reminder2 = int(goods_reminder1[0]) + int(num)
-                    sql = "UPDATE COMPANY set REMINDER = '%s' where ID='%s'" % \
-                          (goods_reminder2, self.sale_click(1))
-                    c.execute(sql)
-                    conn.commit()
-                except (sqlite3.ProgrammingError, sqlite3.OperationalError):
-                    conn.rollback()
-                    QMessageBox.warning(self, '警告！', '更新失败，数据库写入操作失败！')
-                else:
+                sql = "SELECT REMINDER from COMPANY  where ID='%s'" % self.sale_click(1)
+                results = self.exec_sqlite('r', sql)[0]
+                goods_reminder = int(results[0]) + int(num)
+                sql = "UPDATE COMPANY set REMINDER = '%s' where ID='%s'" % \
+                      (goods_reminder, self.sale_click(1))
+                status = self.exec_sqlite('w', sql)
+                if status == 1:
                     self.clean_goods_search()
                     self.clean_prepare_goods_search()
                     QMessageBox.information(self, '提示！', '更新成功！')
                 self.row1 = None
-                conn.close()
 
     def write_stock_data(self, results):
         for i in range(self.table_stock.rowCount()):
             self.table_stock.removeRow(0)
         i = 0
+        self.table_stock.setRowCount(len(results))
         for row in results:
-            self.table_stock.setRowCount(len(results))
             for m in range(8):
-                item = QTableWidgetItem()
-                self.table_stock.setItem(i, m, item)
+                self.table_stock.setItem(i, m, QTableWidgetItem())
                 item_add = self.table_stock.item(i, m)
                 item_add.setText(str(row[m]))
                 item_add.setTextAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
             i = i + 1
 
     def put_stock_data(self):
-        conn = sqlite3.connect(sql_file)
-        results = conn.cursor().execute("SELECT *  from GOODS").fetchall()
+        sql = "SELECT *  from GOODS"
+        results = self.exec_sqlite('r', sql)
         self.write_stock_data(results)
-        conn.close()
 
     def clean_stock_search(self):
         self.text_stock_1.clear()
@@ -679,19 +636,16 @@ class FirstWindow(QMainWindow, Ui_MainWindow):
 
     def search_stock_by(self, var):
         self.row1 = None
-        conn = sqlite3.connect(sql_file)
         if var == 'date':
-            text = self.text_stock_1.text().replace('.', '/')
-            if self.text_stock_1.text().count('.') == 2:
-                text = text + ' '
+            text = self.dateEdit.date().toString(Qt.ISODate)
         else:
             text = self.text_stock_1.text()
         if not text:
             self.put_stock_data()
         else:
-            results = conn.cursor().execute("SELECT * FROM GOODS WHERE " + var + " like '%" + text + "%'").fetchall()
+            sql = "SELECT * FROM GOODS WHERE " + var + " like '%" + text + "%'"
+            results = self.exec_sqlite('r', sql)
             self.write_stock_data(results)
-            conn.close()
 
     def get_stock_click(self, row, col):
         self.table_stock.item(row, col).text()
@@ -709,17 +663,9 @@ class FirstWindow(QMainWindow, Ui_MainWindow):
             if reply == QMessageBox.Yes:
                 del_date = self.stock_click(0)
                 del_id = self.stock_click(1)
-                conn = sqlite3.connect(sql_file)
-                c = conn.cursor()
                 sql = "DELETE from GOODS where DATE='%s' and ID='%s'" % (del_date, del_id)
-                try:
-                    c.execute(sql)
-                    conn.commit()
-                except (sqlite3.ProgrammingError, sqlite3.OperationalError):
-                    conn.rollback()
-                    QMessageBox.warning(self, '提示', '删除失败，数据库删除操作失败！')
-                else:
-                    conn.close()
+                status = self.exec_sqlite('w', sql)
+                if status == 1:
                     self.table_stock.removeRow(self.table_stock.currentRow())
                     QMessageBox.information(self, '提示', '删除成功！')
             self.row1 = None
@@ -728,22 +674,20 @@ class FirstWindow(QMainWindow, Ui_MainWindow):
         for i in range(self.table_prepare_goods.rowCount()):
             self.table_prepare_goods.removeRow(0)
         i = 0
+        self.table_prepare_goods.setRowCount(len(results))
         for row in results:
             rows = [row[0], row[1], row[2], row[3], row[4], row[6]]
-            self.table_prepare_goods.setRowCount(len(results))
             for m in range(6):
-                item = QTableWidgetItem()
-                self.table_prepare_goods.setItem(i, m, item)
+                self.table_prepare_goods.setItem(i, m, QTableWidgetItem())
                 item_add = self.table_prepare_goods.item(i, m)
                 item_add.setText(str(rows[m]))
                 item_add.setTextAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
             i = i + 1
 
     def put_prepare_goods_data(self):
-        conn = sqlite3.connect(sql_file)
-        results = conn.cursor().execute("select * from COMPANY order by id").fetchall()
+        sql = "select * from COMPANY order by id"
+        results = self.exec_sqlite('r', sql)
         self.write_prepare_goods_data(results)
-        conn.close()
 
     def clean_prepare_goods_search(self):
         self.text_sell.clear()
@@ -751,14 +695,13 @@ class FirstWindow(QMainWindow, Ui_MainWindow):
 
     def search_prepare_goods_by(self, var):
         self.row1 = None
-        conn = sqlite3.connect(sql_file)
         text = self.text_sell.text()
         if not text:
             self.put_prepare_goods_data()
         else:
-            results = conn.cursor().execute("SELECT * FROM COMPANY WHERE " + var + " like '%" + text + "%'").fetchall()
+            sql = "SELECT * FROM COMPANY WHERE " + var + " like '%" + text + "%'"
+            results = self.exec_sqlite('r', sql)
             self.write_prepare_goods_data(results)
-            conn.close()
 
     def get_prepare_goods_click(self, row, col):
         self.table_prepare_goods.item(row, col).text()
@@ -787,46 +730,29 @@ class FirstWindow(QMainWindow, Ui_MainWindow):
                 QMessageBox.information(self, '提示！', '请输入一个大于 0 的数！')
             else:
                 after_num = int(reminder) - num
-                if after_num <= 0:
+                if after_num < 0:
                     QMessageBox.information(self, '提示！', '库存不能小于0！')
                     return
                 get_sum = num * int(price)
-                conn = sqlite3.connect(sql_file)
-                c = conn.cursor()
-                sql1 = "INSERT INTO SELL (ID,NAME,MODEL,UNIT,NUM,PRICE,SUM) \
+                sql = "INSERT INTO SELL (ID,NAME,MODEL,UNIT,NUM,PRICE,SUM) \
                                            VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s')" % \
-                       (id1, name, model, unit,
-                        num, price, get_sum)
-                try:
-                    c.execute(sql1)
-                    conn.commit()
-                except sqlite3.IntegrityError:
-                    conn.rollback()
-                    QMessageBox.warning(self, '警告！', '更新失败，请勿重复出售相同的商品！')
-                except (sqlite3.ProgrammingError, sqlite3.OperationalError):
-                    conn.rollback()
-                    QMessageBox.warning(self, '警告！', '更新失败，数据库写入操作失败！')
-                else:
-                    sql = "UPDATE COMPANY set REMINDER = '%s' where ID='%s'" % \
-                          (after_num, self.prepare_goods_click(0))
-                    try:
-                        c.execute(sql)
-                        conn.commit()
-                    except (sqlite3.ProgrammingError, sqlite3.OperationalError):
-                        conn.rollback()
-                        QMessageBox.warning(self, '警告！', '更新失败，数据库写入操作失败！')
-                    else:
+                      (id1, name, model, unit, num, price, get_sum)
+                status = self.exec_sqlite('w', sql)
+                if status == 1:
+                    sql = "UPDATE COMPANY set REMINDER = '%s' where ID='%s'" % (after_num, self.prepare_goods_click(0))
+                    status = self.exec_sqlite('w', sql)
+                    if status == 1:
                         self.table_prepare_goods.item(int(self.row1), 2).setText(str(after_num))
                         self.put_goods_data()
                         self.put_sell_out_data()
-                        conn.close()
                         QMessageBox.information(self, '提示！', '更新成功！')
+                elif status == 0:
+                    QMessageBox.warning(self, '警告！', '更新失败，请勿重复出售相同的商品！')
                 self.row1 = None
 
     def put_sell_out_data(self):
-        conn = sqlite3.connect(sql_file)
-        c = conn.cursor()
-        results = c.execute("SELECT * FROM SELL").fetchall()
+        sql = "SELECT * FROM SELL"
+        results = self.exec_sqlite('r', sql)
         for i in range(self.table_sell_out.rowCount()):
             self.table_sell_out.removeRow(0)
         i = 0
@@ -839,7 +765,6 @@ class FirstWindow(QMainWindow, Ui_MainWindow):
                 item_add.setText(str(row[m]))
                 item_add.setTextAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
             i = i + 1
-        conn.close()
 
     def get_sell_out_click(self, row, col):
         self.table_sell_out.item(row, col).text()
@@ -856,25 +781,14 @@ class FirstWindow(QMainWindow, Ui_MainWindow):
             reply = QMessageBox.question(self, '警告', '是否删除所选数据？')
             if reply == QMessageBox.Yes:
                 del_id = self.sell_out_click(0)
-                conn = sqlite3.connect(sql_file)
-                c = conn.cursor()
                 sql = "DELETE from SELL where ID='%s'" % del_id
-                try:
-                    c.execute(sql)
-                    conn.commit()
-                except (sqlite3.ProgrammingError, sqlite3.OperationalError):
-                    conn.rollback()
-                    QMessageBox.warning(self, '提示', '删除失败，数据库删除操作失败！')
-                else:
+                status = self.exec_sqlite('w', sql)
+                if status == 1:
                     sql = "SELECT REMINDER from COMPANY where ID='%s'" % del_id
-                    cursor = c.execute(sql)
-                    results = cursor.fetchall()
-                    m = max(results[0])
-                    k = m + int(self.sell_out_click(4))
+                    results = self.exec_sqlite('r', sql)[0]
+                    k = results[0] + int(self.sell_out_click(4))
                     sql = "UPDATE COMPANY set REMINDER = '%s' where ID='%s'" % (k, del_id)
-                    c.execute(sql)
-                    conn.commit()
-                    conn.close()
+                    self.exec_sqlite('w', sql)
                     self.clean_goods_search()
                     self.clean_prepare_goods_search()
                     self.table_sell_out.removeRow(self.table_sell_out.currentRow())
@@ -884,21 +798,20 @@ class FirstWindow(QMainWindow, Ui_MainWindow):
     def sell_out(self):
         if self.table_sell_out.rowCount() == 0:
             return
-        conn = sqlite3.connect(sql_file)
-        get_info = conn.cursor().execute("SELECT *  from INFO").fetchall()[0]
+        sql = "SELECT *  from INFO"
+        get_info = self.exec_sqlite('r', sql)[0]
         name = get_info[0]
         locale = get_info[1]
         number = get_info[2]
         if name == '' or locale == '' or number == '':
             QMessageBox.information(self, '提示！', '未填写Excel信息！')
-        i = datetime.datetime.now()
         wb = Workbook()
         ws = wb.active
         ws.title = "Sheet 1"
         ws.cell(1, 2).value = name
         ws.cell(1, 2).font = Font(size="16")
         ws.cell(2, 1).value = '客户：'
-        ws.cell(2, 5).value = str(i.year) + '年' + str(i.month) + '月' + str(i.day) + '日'
+        ws.cell(2, 5).value = QDate.currentDate().toString('yyyy年MM月dd日')
         n = 0
         var = ['序号', '名称', '型号', '单位', '数量', '单价', '总价']
         for i in range(7):
@@ -906,7 +819,8 @@ class FirstWindow(QMainWindow, Ui_MainWindow):
             ws.cell(3, n).value = var[i]
             ws.cell(3, n).border = border_set
             ws.cell(3, n).alignment = alignment_center
-        results = conn.cursor().execute("SELECT *  from SELL").fetchall()
+        sql = "SELECT *  from SELL"
+        results = self.exec_sqlite('r', sql)
         n = 3
         m = 0
         for row in results:
@@ -928,7 +842,6 @@ class FirstWindow(QMainWindow, Ui_MainWindow):
                     ws.cell(n, i + 2).border = border_set
                     ws.cell(n, i + 2).data_type = "int"
                     ws.cell(n, i + 2).alignment = alignment_center
-        conn.close()
         if n == 4:
             bbc = '=G4'
         else:
@@ -1001,33 +914,23 @@ class FirstWindow(QMainWindow, Ui_MainWindow):
                     QMessageBox.information(self, '提示！', '打印成功！')
 
     def put_sale(self):
-        i = datetime.datetime.now()
-        date1 = "%s/%s/%s %s:%s:%s" % (i.year, i.month, i.day, i.hour, i.minute, i.second)
-        conn = sqlite3.connect(sql_file)
-        e = conn.cursor().execute("SELECT * FROM SELL")
-        result1 = e.fetchall()
-        for i in range(len(result1)):
-            value1 = result1[i]
-            sql1 = "select * from COMPANY where ID='%s'" % value1[0]
-            e = conn.cursor().execute(sql1)
-            result2 = e.fetchall()
-            value2 = result2[0]
-            cost_sum = value2[5] * value1[4]
-            price = value2[6] * value1[4]
+        date = QDate.currentDate().toString(Qt.ISODate) + ' ' + QTime.currentTime().toString(Qt.ISODate)
+        sql = "SELECT * FROM SELL"
+        result = self.exec_sqlite('r', sql)
+        for i in range(len(result)):
+            value = result[i]
+            sql = "select * from COMPANY where ID='%s'" % value[0]
+            result1 = self.exec_sqlite('r', sql)[0]
+            cost_sum = result1[5] * value[4]
+            price = result1[6] * value[4]
             get_in = price - cost_sum
-            sql2 = "INSERT INTO SALE (DATE,ID,NAME,MODEL,UNIT,COST,PRICE,NUM,COST_SUM,SUM,GET) \
+            sql1 = "INSERT INTO SALE (DATE,ID,NAME,MODEL,UNIT,COST,PRICE,NUM,COST_SUM,SUM,GET) \
                                       VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')" % \
-                   (date1, value2[0], value2[1], value2[3], value2[4], value2[5], value2[6], value1[4], cost_sum,
+                   (date, result1[0], result1[1], result1[3], result1[4], result1[5], result1[6], value[4], cost_sum,
                     price, get_in)
-            try:
-                conn.cursor().execute(sql2)
-                conn.commit()
-            except Warning:
-                conn.rollback()
-                conn.close()
-                QMessageBox.warning(self, '警告！', '数据库写入操作失败！')
-            else:
-                self.clean_sale_search()
+            status = self.exec_sqlite('w', sql1)
+            if status == 1:
+                self.put_sale_data()
 
     def clean_sale(self):
         m = self.table_sell_out.rowCount()
@@ -1050,13 +953,11 @@ class FirstWindow(QMainWindow, Ui_MainWindow):
         conn.close()
 
     def put_setting_data(self):
-        conn = sqlite3.connect(sql_file)
-        c = conn.cursor()
-        info = c.execute("SELECT *  from INFO").fetchall()[0]
+        sql = "SELECT *  from INFO"
+        info = self.exec_sqlite('r', sql)[0]
         name = info[0]
         locale = info[1]
         number = info[2]
-        conn.close()
         self.text_settings_1.setText(name)
         self.text_settings_2.setText(locale)
         self.text_settings_3.setText(number)
@@ -1065,19 +966,10 @@ class FirstWindow(QMainWindow, Ui_MainWindow):
         name = self.text_settings_1.text()
         locale = self.text_settings_2.text()
         number = self.text_settings_3.text()
-        conn = sqlite3.connect(sql_file)
-        c = conn.cursor()
-        sql = "UPDATE INFO set NAME = '%s',LOCALE = '%s',NUMBER = '%s'" % \
-              (name, locale, number)
-        try:
-            c.execute(sql)
-            conn.commit()
-        except (sqlite3.ProgrammingError, sqlite3.OperationalError):
-            conn.rollback()
-            QMessageBox.warning(self, '警告！', '数据库写入操作失败！')
-        else:
+        sql = "UPDATE INFO set NAME = '%s',LOCALE = '%s',NUMBER = '%s'" % (name, locale, number)
+        status = self.exec_sqlite('w', sql)
+        if status == 1:
             QMessageBox.information(self, '提示！', '更新成功！')
-        conn.close()
 
     def excel_template(self):
         path, ok = QFileDialog.getSaveFileName(self, '保存文件', desktop_path + '/模板文件.xlsx', "Excel 文件(*.xlsx)")
@@ -1131,8 +1023,8 @@ class FirstWindow(QMainWindow, Ui_MainWindow):
         ws.title = "Sheet 1"
         title = ['商品id', '名称', '余货量', '型号', '单位', '成本价', '单价']
         ws.append(title)
-        conn = sqlite3.connect(sql_file)
-        results = conn.cursor().execute("SELECT *  from COMPANY").fetchall()
+        sql = "SELECT *  from COMPANY"
+        results = self.exec_sqlite('r', sql)
         n = 1
         for row in results:
             n = n + 1
@@ -1174,8 +1066,8 @@ class FirstWindow(QMainWindow, Ui_MainWindow):
         ws.title = "Sheet 1"
         title = ['日期', '商品id', '名称', '型号', '单位', '成本价', '单价', '售出数量', '总成本价', '总销售额', '利润']
         ws.append(title)
-        conn = sqlite3.connect(sql_file)
-        results = conn.cursor().execute("SELECT * FROM SALE WHERE date like '%" + d + "%'").fetchall()
+        sql = "SELECT * FROM SALE WHERE date like '%" + d + "%'"
+        results = self.exec_sqlite('r', sql)
         n = 1
         for row in results:
             n = n + 1
@@ -1204,8 +1096,8 @@ class FirstWindow(QMainWindow, Ui_MainWindow):
         ws.title = "Sheet 1"
         title = ['日期', '商品id', '名称', '型号', '单位', '成本价', '单价', '售出数量', '总成本价', '总销售额', '利润']
         ws.append(title)
-        conn = sqlite3.connect(sql_file)
-        results = conn.cursor().execute("SELECT *  from SALE").fetchall()
+        sql = "SELECT *  from SALE"
+        results = self.exec_sqlite('r', sql)
         n = 1
         for row in results:
             n = n + 1
@@ -1258,28 +1150,21 @@ class FirstWindow(QMainWindow, Ui_MainWindow):
         elif ok is True and num <= 0:
             QMessageBox.information(self, '提示！', '请输入一个大于 0 的数！')
         else:
-            conn = sqlite3.connect(sql_file)
-            c = conn.cursor()
             sql = "UPDATE CAL set " + a + " = '%s'" % num
-            c.execute(sql)
-            conn.commit()
-            conn.close()
+            self.exec_sqlite('w', sql)
             self.put_calculate_data()
             self.calculate()
 
     def put_calculate_data(self):
-        conn = sqlite3.connect(sql_file)
-        c = conn.cursor()
-        self.result = c.execute("SELECT *  from CAL").fetchall()
-        conn.close()
-        cal = self.result[0]
+        sql = "SELECT *  from CAL"
+        result = self.exec_sqlite('r', sql)[0]
         var_a = []
         var_b = []
         for i in range(7):
-            var_a.append(str(cal[i]))
+            var_a.append(str(result[i]))
             exec("self.text_a%s.setText(var_a[%s])" % (i + 1, i))
         for i in range(12):
-            var_b.append(str(cal[i + 7]))
+            var_b.append(str(result[i + 7]))
             exec("self.text_b%s.setText(var_b[%s])" % (i + 1, i))
 
     @staticmethod
@@ -1342,38 +1227,25 @@ class FirstWindow(QMainWindow, Ui_MainWindow):
 
     def put_printer_data(self):
         printers = []
-        result = []
         for i in EnumPrinters(2):
             printers.append(i[2])
         self.comboBox.addItems(printers)
-        conn = sqlite3.connect(sql_file)
-        c = conn.cursor()
-        try:
-            result = c.execute("SELECT PRINTER  from INFO").fetchall()[0]
-        except sqlite3.OperationalError:
-            c.execute("alter table INFO add PRINTER TEXT NULL")
-            conn.commit()
+        sql = "SELECT PRINTER  from INFO"
+        result = self.exec_sqlite('r', sql)[0]
         if not result[0] or result[0] == '':
-            c.execute("UPDATE INFO set PRINTER = '%s'" % GetDefaultPrinter())
-            conn.commit()
-            result = c.execute("SELECT PRINTER  from INFO").fetchall()
+            sql = "UPDATE INFO set PRINTER = '%s'" % GetDefaultPrinter()
+            self.exec_sqlite('w', sql)
+            sql = "SELECT PRINTER  from INFO"
+            result = self.exec_sqlite('r', sql)[0]
         self.comboBox.setCurrentIndex(printers.index(result[0]))
         self.label_11.setText(result[0])
-        conn.close()
 
     def update_printer(self):
-        conn = sqlite3.connect(sql_file)
-        c = conn.cursor()
-        try:
-            c.execute("UPDATE INFO set PRINTER = '%s'" % self.comboBox.currentText())
-            conn.commit()
-        except (sqlite3.ProgrammingError, sqlite3.OperationalError):
-            conn.rollback()
-            QMessageBox.warning(self, '警告！', '数据库写入操作失败！')
-        else:
+        sql = "UPDATE INFO set PRINTER = '%s'" % self.comboBox.currentText()
+        status = self.exec_sqlite('w', sql)
+        if status == 1:
             self.label_11.setText(self.comboBox.currentText())
             QMessageBox.information(self, '提示！', '更新成功！')
-        conn.close()
 
 
 class DownloadUpdate(QThread):
